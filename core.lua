@@ -1,6 +1,6 @@
 -- Configuration functions - DO NOT TOUCH
-local CreateSpellEntry = function( id, castByAnyone )
-	return { id = id, castByAnyone = castByAnyone };
+local CreateSpellEntry = function( id, castByAnyone, overrideColor )
+	return { id = id, castByAnyone = castByAnyone, overrideColor = overrideColor };
 end
 
 local CreateColor = function( red, green, blue, alpha )
@@ -116,6 +116,7 @@ local CLASS_FILTERS = {
 		},
 		HUNTER = { 
 			target = {
+				CreateSpellEntry( 49050 ), -- Aimed Shot
 				CreateSpellEntry( 49001 ), -- Serpent Sting
 				CreateSpellEntry( 63672 ), -- Black Arrow
 			},
@@ -163,6 +164,7 @@ local CLASS_FILTERS = {
 			},
 			player = {
 				CreateSpellEntry( 48168 ), -- Inner Fire
+				CreateSpellEntry( 47585 ), -- Dispersion
 			},
 		},
 		ROGUE = { 
@@ -192,7 +194,7 @@ do
 		local byPlayer = caster == "player" or caster == "pet" or caster == "vehicle";
 			
 		for _, v in ipairs( filter ) do
-			if ( v.id == id and ( v.castByAnyone or byPlayer ) ) then return true; end
+			if ( v.id == id and ( v.castByAnyone or byPlayer ) ) then return v; end
 		end
 		
 		return false;
@@ -210,9 +212,9 @@ do
 					break;
 				end							
 				
-				local globalFilter = ( self.unit ~= "target" or unit ~= "player" or not UnitIsUnit( "player", "target" ) ) and CheckFilter( self, spellId, caster, self.globalFilter );
-				if ( globalFilter or CheckFilter( self, spellId, caster, filter ) ) then 
-					tinsert( result, { name = name, texture = texture, duration = duration, expirationTime = expirationTime, stacks = stacks, unit = unit } );
+				local filterInfo = ( ( self.unit ~= "target" or unit ~= "player" or not UnitIsUnit( "player", "target" ) ) and CheckFilter( self, spellId, caster, self.globalFilter ) )or CheckFilter( self, spellId, caster, filter );
+				if ( filterInfo ) then 
+					tinsert( result, { name = name, texture = texture, duration = duration, expirationTime = expirationTime, stacks = stacks, unit = unit, overrideColor = filterInfo.overrideColor } );
 					count = count + 1;
 				end
 			end
@@ -464,7 +466,9 @@ do
 		end	
 		
 		line:SetAuraInfo( auraInfo );
-		if ( auraInfo.unit == "player" and self.playerAuraColor ) then
+		if ( auraInfo.overrideColor ) then
+			line:SetColor( auraInfo.overrideColor );
+		elseif ( auraInfo.unit == "player" and self.playerAuraColor ) then
 			line:SetColor( self.playerAuraColor );
 		elseif ( self.unitAuraColor ) then
 			line:SetColor( self.unitAuraColor );
@@ -641,20 +645,21 @@ elseif ( LAYOUT == 2 ) then
 	local playerFrame = CreateAuraBarFrame( playerDataSource, oUF_Tukz_player );
 	playerFrame:SetUnitAuraColor( PLAYER_BAR_COLOR );
 	
-	local yOffset = 10;
+	local yOffset = 6;
+	playerFrame:SetHiddenHeight( -yOffset );
+
 	if ( playerClass == "DEATHKNIGHT" or playerClass == "SHAMAN" ) then
 		yOffset = yOffset + 8;
 	end
 
-	playerFrame:SetHiddenHeight( -10 );
 	playerFrame:SetPoint( "BOTTOMLEFT", oUF_Tukz_player, "TOPLEFT", 0, yOffset );
 	playerFrame:SetPoint( "BOTTOMRIGHT", oUF_Tukz_player, "TOPRIGHT", 0, yOffset );
 	playerFrame:Show();
 
 	local targetFrame = CreateAuraBarFrame( targetDataSource, oUF_Tukz_player );
 	targetFrame:SetUnitAuraColor( TARGET_BAR_COLOR );
-	targetFrame:SetPoint( "BOTTOMLEFT", playerFrame, "TOPLEFT", 0, 10 );
-	targetFrame:SetPoint( "BOTTOMRIGHT", playerFrame, "TOPRIGHT", 0, 10 );
+	targetFrame:SetPoint( "BOTTOMLEFT", playerFrame, "TOPLEFT", 0, 6 );
+	targetFrame:SetPoint( "BOTTOMRIGHT", playerFrame, "TOPRIGHT", 0, 6 );
 	targetFrame:Show();
 else
 	error( "Undefined layout " .. tostring( LAYOUT ) );
