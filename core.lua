@@ -1,24 +1,43 @@
+-- Configuration functions - DO NOT TOUCH
+local CreateSpellEntry = function( id, castByAnyone )
+	return { id = id, castByAnyone = castByAnyone };
+end
+
+local CreateColor = function( red, green, blue, alpha )
+	return { red / 255, green / 255, blue / 255, alpha };
+end
+
+-- Configuration starts here:
+
 -- Looks ugly when lower than 23
 local BAR_HEIGHT = 23;
 
 -- Background alpha (range from 0 to 1)
-local BACKGROUND_ALPHA = 0.75
+local BACKGROUND_ALPHA = 0.75;
 
 --[[ Permanent aura bars
 	1 filled 		
 	0 empty
 ]]--
-local PERMANENT_AURA_VALUE  = 1
+local PERMANENT_AURA_VALUE = 1;
+
+--[[ Player bar color
+	red, green, blue - range from 0 to 255
+	alpha - range from 0 to 1
+]]--
+local PLAYER_BAR_COLOR = CreateColor( 255, 255, 255, 1 );
+
+--[[ Target bar color
+	red, green, blue - range from 0 to 255
+	alpha - range from 0 to 1
+]]--
+local TARGET_BAR_COLOR = CreateColor( 255, 255, 255, 1 );
 
 --[[ Layouts
 	1 - both player and target buffs in one frame right above player frame
 	2 - player and target buffs separated into two frames above player frame
 ]]--
-local LAYOUT = 2
-
-local CreateSpellEntry = function( id, castByAnyone )
-	return { id = id, castByAnyone = castByAnyone };
-end
+local LAYOUT = 2;
 
 -- Global filter - mostly for trinket procs, delete or wrap into comment block --[[  ]] if you dont want to track those
 local GLOBAL_FILTER = {
@@ -169,11 +188,11 @@ do
 	-- private
 	local CheckFilter = function( self, id, caster, filter )
 		if ( filter == nil ) then return false; end
-		
-		local castedByPlayer = caster == "player" or caster == "pet" or caster == "vehicle";
-	
+			
+		local byPlayer = caster == "player" or caster == "pet" or caster == "vehicle";
+			
 		for _, v in ipairs( filter ) do
-			if ( v.id == id and ( v.castByAnyone or castedByPlayer ) ) then return true; end
+			if ( v.id == id and ( v.castByAnyone or byPlayer ) ) then return true; end
 		end
 		
 		return false;
@@ -189,11 +208,11 @@ do
 				local name, rank, texture, stacks, debuffType, duration, expirationTime, caster, isStealable, shouldConsolidate, spellId = UnitAura( unit, index, auraType );		
 				if ( name == nil ) then
 					break;
-				end				
+				end							
 				
 				local globalFilter = ( self.unit ~= "target" or unit ~= "player" or not UnitIsUnit( "player", "target" ) ) and CheckFilter( self, spellId, caster, self.globalFilter );
 				if ( globalFilter or CheckFilter( self, spellId, caster, filter ) ) then 
-					tinsert( result, { name = name, texture = texture, duration = duration, expirationTime = expirationTime, stacks = stacks } );
+					tinsert( result, { name = name, texture = texture, duration = duration, expirationTime = expirationTime, stacks = stacks, unit = unit } );
 					count = count + 1;
 				end
 			end
@@ -356,6 +375,10 @@ do
 			end
 		end
 		
+		local SetColor = function( self, color )
+			self.bar:SetStatusBarColor( unpack( color ) );
+		end
+		
 		local SetAuraInfo = function( self, auraInfo )
 			self:SetName( auraInfo.name );
 			self:SetIcon( auraInfo.texture );	
@@ -418,6 +441,7 @@ do
 			result.SetName = SetName;
 			result.SetStacks = SetStacks;
 			result.SetAuraInfo = SetAuraInfo;
+			result.SetColor = SetColor;
 			
 			return result;
 		end
@@ -440,6 +464,11 @@ do
 		end	
 		
 		line:SetAuraInfo( auraInfo );
+		if ( auraInfo.unit == "player" and self.playerAuraColor ) then
+			line:SetColor( self.playerAuraColor );
+		elseif ( self.unitAuraColor ) then
+			line:SetColor( self.unitAuraColor );
+		end
 		
 		line:Show();
 	end
@@ -506,6 +535,14 @@ do
 		self.hiddenHeight = height;
 	end
 	
+	local function SetPlayerAuraColor( self, color )
+		self.playerAuraColor = color;
+	end
+
+	local function SetUnitAuraColor( self, color )
+		self.unitAuraColor = color;
+	end	
+
 	-- constructor
 	CreateAuraBarFrame = function( dataSource, parent )
 		local result = CreateFrame( "Frame", nil, parent, nil );
@@ -548,6 +585,8 @@ do
 		
 		result.Render = Render;
 		result.SetHiddenHeight = SetHiddenHeight;
+		result.SetPlayerAuraColor = SetPlayerAuraColor;
+		result.SetUnitAuraColor = SetUnitAuraColor;
 		
 		return result;
 	end
@@ -570,6 +609,8 @@ if ( LAYOUT == 1 ) then
 	end
 
 	local frame = CreateAuraBarFrame( dataSource, oUF_Tukz_player );
+	frame:SetPlayerAuraColor( PLAYER_BAR_COLOR );
+	frame:SetUnitAuraColor( TARGET_BAR_COLOR );
 
 	local yOffset = 1;
 
@@ -598,6 +639,7 @@ elseif ( LAYOUT == 2 ) then
 	end
 
 	local playerFrame = CreateAuraBarFrame( playerDataSource, oUF_Tukz_player );
+	playerFrame:SetUnitAuraColor( PLAYER_BAR_COLOR );
 	
 	local yOffset = 10;
 	if ( playerClass == "DEATHKNIGHT" or playerClass == "SHAMAN" ) then
@@ -610,6 +652,7 @@ elseif ( LAYOUT == 2 ) then
 	playerFrame:Show();
 
 	local targetFrame = CreateAuraBarFrame( targetDataSource, oUF_Tukz_player );
+	targetFrame:SetUnitAuraColor( TARGET_BAR_COLOR );
 	targetFrame:SetPoint( "BOTTOMLEFT", playerFrame, "TOPLEFT", 0, 10 );
 	targetFrame:SetPoint( "BOTTOMRIGHT", playerFrame, "TOPRIGHT", 0, 10 );
 	targetFrame:Show();
