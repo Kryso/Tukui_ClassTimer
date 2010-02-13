@@ -16,11 +16,17 @@ local PERMANENT_AURA_VALUE  = 1
 ]]--
 local LAYOUT = 2
 
+local CreateSpellEntry = function( id, castByAnyone )
+	return { id = id, castByAnyone = castByAnyone };
+end
+
 -- Global filter - mostly for trinket procs, delete or wrap into comment block --[[  ]] if you dont want to track those
 local GLOBAL_FILTER = {
---		71432, -- Mote of Anger
-		72412, -- Frostforged Champion
-		67703, 67708, 67772, 67773, -- Death Choice
+--		CreateSpellEntry( 71432 ), -- Mote of Anger
+		CreateSpellEntry( 72412 ), -- Frostforged Champion
+		CreateSpellEntry( 67703 ), CreateSpellEntry( 67708 ), CreateSpellEntry( 67772 ), CreateSpellEntry( 67773 ), -- Death Choice
+		CreateSpellEntry( 2825, true ), -- Bloodlust
+		CreateSpellEntry( 32182, true ), -- Heroism
 	};
 	
 --[[ Class specific filters
@@ -31,11 +37,11 @@ Examples:
 	
 		DEATHKNIGHT = { 
 			target = { 
-				"Frost Fever",
-				"Blood Plague",
+				CreateSpellEntry( "Frost Fever" ),
+				CreateSpellEntry( "Blood Plague" ),
 			},
 			player = { 
-				"Bone Shield",
+				CreateSpellEntry( "Bone Shield" ),
 			}
 		},
 
@@ -43,8 +49,8 @@ Examples:
 	
 		DEATHKNIGHT = { 
 			target = { 
-				"Frost Fever",
-				"Blood Plague",
+				CreateSpellEntry( "Frost Fever" ),
+				CreateSpellEntry( "Blood Plague" ),
 			},
 		},
 
@@ -60,42 +66,43 @@ Examples:
 		
 		( ^^^ yes nothing ^^^ )
 ]]--
+
 local CLASS_FILTERS = {
 		DEATHKNIGHT = { 
 			target = { 
-				55095, -- Frost Fever
-				55078, -- Blood Plague
+				CreateSpellEntry( 55095 ), -- Frost Fever
+				CreateSpellEntry( 55078 ), -- Blood Plague
 			},
 			player = { 
-				49222, -- Bone Shield
-				53365, -- Unholy Strength
+				CreateSpellEntry( 49222 ), -- Bone Shield
+				CreateSpellEntry( 53365 ), -- Unholy Strength
 			}
 		},
 		DRUID = { 
 			target = { 
-				53251, -- Wild Growth
-				48441, -- Rejuvenation
-				48443, -- Regrowth
-				48468, -- Insect Swarm
-				48463, -- Moonfire
+				CreateSpellEntry( 53251 ), -- Wild Growth
+				CreateSpellEntry( 48441 ), -- Rejuvenation
+				CreateSpellEntry( 48443 ), -- Regrowth
+				CreateSpellEntry( 48468 ), -- Insect Swarm
+				CreateSpellEntry( 48463 ), -- Moonfire
 			},
 			player = { 
-				16870, -- Clearcasting
-				48518, -- Eclipse starfire
-				48517, -- Eclipse wrath
-				53201, -- Starfall
-				29166, -- Innervate
-				22812, -- Barkskin
+				CreateSpellEntry( 16870 ), -- Clearcasting
+				CreateSpellEntry( 48518 ), -- Eclipse starfire
+				CreateSpellEntry( 48517 ), -- Eclipse wrath
+				CreateSpellEntry( 53201 ), -- Starfall
+				CreateSpellEntry( 29166 ), -- Innervate
+				CreateSpellEntry( 22812 ), -- Barkskin
 			},
 		},
 		HUNTER = { 
 			target = {
-				49001, -- Serpent Sting
-				63672, -- Black Arrow
+				CreateSpellEntry( 49001 ), -- Serpent Sting
+				CreateSpellEntry( 63672 ), -- Black Arrow
 			},
 			player = {
-				56453, -- Lock and Load
-				34074, -- Aspect of the Viper
+				CreateSpellEntry( 56453 ), -- Lock and Load
+				CreateSpellEntry( 34074 ), -- Aspect of the Viper
 			},
 		},
 		MAGE = {
@@ -104,39 +111,39 @@ local CLASS_FILTERS = {
 		},
 		PALADIN = { 
 			target = {
-				31803, -- Holy Vengeance (Aliance)
-				53742, -- Blood Corruption (Horde)
-				61840, -- Righteous Vengeance
-				20066, -- Repentance
-				53563, -- Beacon of Light
-				10308, -- Hammer of Justice
+				CreateSpellEntry( 31803 ), -- Holy Vengeance (Aliance)
+				CreateSpellEntry( 53742 ), -- Blood Corruption (Horde)
+				CreateSpellEntry( 61840 ), -- Righteous Vengeance
+				CreateSpellEntry( 20066 ), -- Repentance
+				CreateSpellEntry( 53563 ), -- Beacon of Light
+				CreateSpellEntry( 10308 ), -- Hammer of Justice
 			},
 			player = {
-				642, -- Divine Shield
-				498, -- Divine Protection
-				31884, -- Avenging Wrath
-				53601, -- Sacred Shield
-				54428, -- Divine Plea
-				53488, -- The Art of War
-				71187, -- Libram of Three Truths
-				25771, -- Debuff: Forbearance
+				CreateSpellEntry( 642 ), -- Divine Shield
+				CreateSpellEntry( 498 ), -- Divine Protection
+				CreateSpellEntry( 31884 ), -- Avenging Wrath
+				CreateSpellEntry( 53601 ), -- Sacred Shield
+				CreateSpellEntry( 54428 ), -- Divine Plea
+				CreateSpellEntry( 53488 ), -- The Art of War
+				CreateSpellEntry( 71187 ), -- Libram of Three Truths
+				CreateSpellEntry( 25771 ), -- Debuff: Forbearance
 			},
 		},
 		PRIEST = { 
 			target = { 
-				48066, -- Power Word: Shield
-				6788, -- Weakened Soul
-				48068, -- Renew
-				48111, -- Prayer of Mending
-				552, -- Abolish Disease
-				33206, -- Pain Suppression
-				10060, -- Power Infusion
-				48160, -- Vampiric Touch
-				48125, -- Shadow Word: Pain
-				48300, -- Devouring Plague
+				CreateSpellEntry( 48066 ), -- Power Word: Shield
+				CreateSpellEntry( 6788, true ), -- Weakened Soul
+				CreateSpellEntry( 48068 ), -- Renew
+				CreateSpellEntry( 48111 ), -- Prayer of Mending
+				CreateSpellEntry( 552 ), -- Abolish Disease
+				CreateSpellEntry( 33206 ), -- Pain Suppression
+				CreateSpellEntry( 10060 ), -- Power Infusion
+				CreateSpellEntry( 48160 ), -- Vampiric Touch
+				CreateSpellEntry( 48125 ), -- Shadow Word: Pain
+				CreateSpellEntry( 48300 ), -- Devouring Plague
 			},
 			player = {
-				48168, -- Inner Fire
+				CreateSpellEntry( 48168 ), -- Inner Fire
 			},
 		},
 		ROGUE = { 
@@ -160,11 +167,13 @@ local CLASS_FILTERS = {
 local CreateUnitAuraDataSource;
 do
 	-- private
-	local CheckFilter = function( self, id, filter )
+	local CheckFilter = function( self, id, caster, filter )
 		if ( filter == nil ) then return false; end
+		
+		local castedByPlayer = caster == "player" or caster == "pet" or caster == "vehicle";
 	
 		for _, v in ipairs( filter ) do
-			if ( v == id ) then return true; end
+			if ( v.id == id and ( v.castByAnyone or castedByPlayer ) ) then return true; end
 		end
 		
 		return false;
@@ -177,17 +186,15 @@ do
 	
 		for _, auraType in ipairs( { "HELPFUL", "HARMFUL" } ) do
 			for index = 1, 40 do
-				local name, rank, texture, stacks, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId = UnitAura( unit, index, auraType );		
+				local name, rank, texture, stacks, debuffType, duration, expirationTime, caster, isStealable, shouldConsolidate, spellId = UnitAura( unit, index, auraType );		
 				if ( name == nil ) then
 					break;
-				end
+				end				
 				
-				if ( unitCaster == "player" or unitCaster == "pet" or unitCaster == "vehicle" ) then
-					local globalFilter = ( self.unit ~= "target" or unit ~= "player" or not UnitIsUnit( "player", "target" ) ) and CheckFilter( self, spellId, self.globalFilter );
-					if ( globalFilter or CheckFilter( self, spellId, filter ) ) then 
-						tinsert( result, { name = name, texture = texture, duration = duration, expirationTime = expirationTime, stacks = stacks } );
-						count = count + 1;
-					end
+				local globalFilter = ( self.unit ~= "target" or unit ~= "player" or not UnitIsUnit( "player", "target" ) ) and CheckFilter( self, spellId, caster, self.globalFilter );
+				if ( globalFilter or CheckFilter( self, spellId, caster, filter ) ) then 
+					tinsert( result, { name = name, texture = texture, duration = duration, expirationTime = expirationTime, stacks = stacks } );
+					count = count + 1;
 				end
 			end
 		end
