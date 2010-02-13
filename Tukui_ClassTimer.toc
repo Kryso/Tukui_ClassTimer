@@ -1,0 +1,5 @@
+## Interface: 30300
+## Title: Tukui Class Timer
+## Author: Kryso
+
+core.lua
