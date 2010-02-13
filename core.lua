@@ -19,7 +19,7 @@ local LAYOUT = 2
 -- Global filter - mostly for trinket procs, delete or wrap into comment block --[[  ]] if you dont want to track those
 local GLOBAL_FILTER = {
 --		71432, -- Mote of Anger
---		72412, -- Frostforged Champion
+		72412, -- Frostforged Champion
 		67703, 67708, 67772, 67773, -- Death Choice
 	};
 	
@@ -68,10 +68,14 @@ local CLASS_FILTERS = {
 			},
 			player = { 
 				49222, -- Bone Shield
+				53365, -- Unholy Strength
 			}
 		},
 		DRUID = { 
 			target = { 
+				53251, -- Wild Growth
+				48441, -- Rejuvenation
+				48443, -- Regrowth
 				48468, -- Insect Swarm
 				48463, -- Moonfire
 			},
@@ -80,6 +84,8 @@ local CLASS_FILTERS = {
 				48518, -- Eclipse starfire
 				48517, -- Eclipse wrath
 				53201, -- Starfall
+				29166, -- Innervate
+				22812, -- Barkskin
 			},
 		},
 		HUNTER = { 
