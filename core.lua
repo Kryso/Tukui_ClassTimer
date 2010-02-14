@@ -23,6 +23,12 @@ local BACKGROUND_ALPHA = 0.75;
 ]]--
 local ICON_POSITION = 2;
 
+-- Icon overlay color
+local ICON_COLOR = CreateColor( 100, 100, 100, 1 );
+
+-- Show spark
+local SPARK = true;
+
 -- Sets distance between right edge of bar and name and left edge of bar and time left
 local TEXT_MARGIN = 5;
 
@@ -36,13 +42,13 @@ local PERMANENT_AURA_VALUE = 1;
 	red, green, blue - range from 0 to 255
 	alpha - range from 0 to 1
 ]]--
-local PLAYER_BAR_COLOR = CreateColor( 255, 255, 255, 1 );
+local PLAYER_BAR_COLOR = CreateColor( 50, 50, 50, 1 );
 
 --[[ Target bar color
 	red, green, blue - range from 0 to 255
 	alpha - range from 0 to 1
 ]]--
-local TARGET_BAR_COLOR = CreateColor( 255, 255, 255, 1 );
+local TARGET_BAR_COLOR = CreateColor( 50, 50, 50, 1 );
 
 --[[ Layouts
 	1 - both player and target buffs in one frame right above player frame
@@ -57,6 +63,12 @@ local GLOBAL_FILTER = {
 		CreateSpellEntry( 67703 ), CreateSpellEntry( 67708 ), CreateSpellEntry( 67772 ), CreateSpellEntry( 67773 ), -- Death Choice
 		CreateSpellEntry( 2825, true ), -- Bloodlust
 		CreateSpellEntry( 32182, true ), -- Heroism
+		CreateSpellEntry( 71485 ), CreateSpellEntry( 71556 ), -- Deathbringer's Will - Agility of the Vrykul
+		CreateSpellEntry( 71492 ), CreateSpellEntry( 71560 ), -- Deathbringer's Will - Speed of the Vrykul		
+		CreateSpellEntry( 71487 ), CreateSpellEntry( 71557 ), -- Deathbringer's Will - Precision of the Iron Dwarves
+		CreateSpellEntry( 71491 ), CreateSpellEntry( 71559 ), -- Deathbringer's Will - Aim of the Iron Dwarves
+		CreateSpellEntry( 71486 ), CreateSpellEntry( 71558 ), -- Deathbringer's Will - Power of the Taunka
+		CreateSpellEntry( 71484 ), CreateSpellEntry( 71561 ), -- Deathbringer's Will - Strength of the Taunka		
 	};
 	
 --[[ Class specific filters
@@ -134,11 +146,24 @@ local CLASS_FILTERS = {
 			player = {
 				CreateSpellEntry( 56453 ), -- Lock and Load
 				CreateSpellEntry( 34074 ), -- Aspect of the Viper
+				CreateSpellEntry( 6150 ), -- Quick Shots
+				CreateSpellEntry( 70728 ), -- Exploit Weakness (2pc t10)
+				CreateSpellEntry( 71007 ), -- Stinger (4pc t10)
 			},
 		},
 		MAGE = {
-			target = { },
-			player = { },
+			target = { 
+				CreateSpellEntry( 55360 ), -- Living Bomb
+			},
+			player = {
+				CreateSpellEntry( 36032 ), -- Arcane Blast
+				CreateSpellEntry( 43020 ), -- Mana Shield
+				CreateSpellEntry( 43039 ), -- Ice Barrier
+				CreateSpellEntry( 43012 ), -- Frost Ward
+				CreateSpellEntry( 43010 ), -- Fire Ward
+				CreateSpellEntry( 12472 ), -- Icy Veins
+				CreateSpellEntry( 44544 ), -- Fingers of Frost
+			},
 		},
 		PALADIN = { 
 			target = {
@@ -163,7 +188,7 @@ local CLASS_FILTERS = {
 		PRIEST = { 
 			target = { 
 				CreateSpellEntry( 48066 ), -- Power Word: Shield
-				CreateSpellEntry( 6788, true ), -- Weakened Soul
+				CreateSpellEntry( 6788, true, CreateColor( 150, 50, 50, 1 ) ), -- Weakened Soul
 				CreateSpellEntry( 48068 ), -- Renew
 				CreateSpellEntry( 48111 ), -- Prayer of Mending
 				CreateSpellEntry( 552 ), -- Abolish Disease
@@ -194,8 +219,17 @@ local CLASS_FILTERS = {
 			},
 		},
 		SHAMAN = {
-			target = { },
-			player = { },
+			target = { 
+				CreateSpellEntry( 49284 ), -- Earth Shield
+				CreateSpellEntry( 49233 ), -- Flame Shock
+				CreateSpellEntry( 49236 ), -- Frost Shock
+			},
+			player = { 
+				CreateSpellEntry( 49281 ), -- Lightning Shield
+				CreateSpellEntry( 57960 ), -- Water Shield
+				CreateSpellEntry( 30823 ), -- Shamanistic Rage
+				CreateSpellEntry( 53817 ), -- Maelstrom Weapon
+			},
 		},
 		WARLOCK = { 
 			target = { 
@@ -366,6 +400,11 @@ do
 				self.bar:SetScript( "OnUpdate", nil );
 				self.bar:SetValue( 0 );
 				self.time:SetText( "" );
+				
+				local spark = self.spark;
+				if ( spark ) then			
+					spark:Hide();
+				end
 			else
 				local remaining = self.expirationTime - time;
 				self.bar:SetValue( remaining );
@@ -381,6 +420,11 @@ do
 					timeText = tostring( math.floor( remaining * 10 ) / 10 );
 				end
 				self.time:SetText( timeText );
+				
+				local spark = self.spark;
+				if ( spark ) then			
+					spark:SetPoint( "CENTER", self.bar, "LEFT", self.bar:GetWidth() * remaining / self.duration, 0 );
+				end
 			end
 		end
 		
@@ -399,11 +443,21 @@ do
 				self.bar:SetMinMaxValues( 0, duration );
 				OnUpdate( self, 0 );
 		
+				local spark = self.spark;
+				if ( spark ) then 
+					spark:Show();
+				end
+		
 				self:SetScript( "OnUpdate", OnUpdate );
 			else
 				self.bar:SetMinMaxValues( 0, 1 );
 				self.bar:SetValue( PERMANENT_AURA_VALUE );
 				self.time:SetText( "" );
+				
+				local spark = self.spark;
+				if ( spark ) then 
+					spark:Hide();
+				end
 				
 				self:SetScript( "OnUpdate", nil );
 			end
@@ -464,7 +518,7 @@ do
 				iconOverlay:SetPoint( "TOPLEFT", icon, "TOPLEFT", -1.5, 1 );
 				iconOverlay:SetPoint( "BOTTOMRIGHT", icon, "BOTTOMRIGHT", 1, -1 );
 				iconOverlay:SetTexture( [=[Interface\Addons\Tukui\media\buttonTex]=] );
-				iconOverlay:SetVertexColor( 1, 1, 1 );
+				iconOverlay:SetVertexColor( unpack( ICON_COLOR ) );
 				result.icon.overlay = iconOverlay;		
 			end
 			
@@ -483,6 +537,15 @@ do
 				end	
 			end
 			result.bar = bar;
+			
+			if ( SPARK ) then
+				local spark = bar:CreateTexture( nil, "OVERLAY", nil );
+				spark:SetTexture( [[Interface\CastingBar\UI-CastingBar-Spark]] );
+				spark:SetWidth( 12 );
+				spark:SetBlendMode( "ADD" );
+				spark:Show();
+				result.spark = spark;
+			end
 			
 			local name = bar:CreateFontString( nil, "OVERLAY", nil );
 			name:SetFont( [=[Interface\Addons\Tukui\media\Russel Square LT.ttf]=], 12, "OUTLINE" );
