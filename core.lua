@@ -15,6 +15,12 @@ local BAR_HEIGHT = 23;
 -- Background alpha (range from 0 to 1)
 local BACKGROUND_ALPHA = 0.75;
 
+-- Show icons outside of frame
+local ICONS_OUTSIDE = true;
+
+-- Sets distance between right edge of bar and name and left edge of bar and time left
+local TEXT_MARGIN = 5;
+
 --[[ Permanent aura bars
 	1 filled 		
 	0 empty
@@ -391,10 +397,15 @@ do
 		-- constructor
 		CreateAuraBar = function( parent )
 			local result = CreateFrame( "Frame", nil, parent, nil );
-		
-			local icon = result:CreateTexture( nil, "ARTWORK", nil );
-			icon:SetPoint( "TOPLEFT", result, "TOPLEFT", 0, 0 );
-			icon:SetPoint( "BOTTOMRIGHT", result, "TOPLEFT", BAR_HEIGHT, -BAR_HEIGHT );
+
+			local icon = result:CreateTexture( nil, "ARTWORK", nil );			
+			if ( ICONS_OUTSIDE ) then
+				icon:SetPoint( "TOPLEFT", result, "TOPLEFT", -BAR_HEIGHT - 6, 0 );
+				icon:SetPoint( "BOTTOMRIGHT", result, "TOPLEFT", -6, -BAR_HEIGHT );			
+			else
+				icon:SetPoint( "TOPLEFT", result, "TOPLEFT", 0, 0 );
+				icon:SetPoint( "BOTTOMRIGHT", result, "TOPLEFT", BAR_HEIGHT, -BAR_HEIGHT );
+			end
 			result.icon = icon;
 			
 			local iconOverlay = result:CreateTexture( nil, "OVERLAY", nil );
@@ -406,8 +417,13 @@ do
 		
 			local bar = CreateFrame( "StatusBar", nil, result, nil );
 			bar:SetStatusBarTexture( [=[Interface\Addons\Tukui\media\normTex]=] );
-			bar:SetPoint( "TOPLEFT", result.icon, "TOPRIGHT", 1, -1 );
-			bar:SetPoint( "BOTTOMRIGHT", result, "BOTTOMRIGHT", 0, 0 );
+			if ( ICONS_OUTSIDE ) then
+				bar:SetPoint( "TOPLEFT", result, "TOPLEFT", 0, -1 );
+				bar:SetPoint( "BOTTOMRIGHT", result, "BOTTOMRIGHT", 0, 0 );
+			else
+				bar:SetPoint( "TOPLEFT", result.icon, "TOPRIGHT", 1, -1 );
+				bar:SetPoint( "BOTTOMRIGHT", result, "BOTTOMRIGHT", 0, 0 );
+			end
 			result.bar = bar;
 			
 			local name = bar:CreateFontString( nil, "OVERLAY", nil );
@@ -415,8 +431,8 @@ do
 			name:SetJustifyH( "LEFT" );
 			name:SetShadowColor( 0, 0, 0 );
 			name:SetShadowOffset( 1.25, -1.25 );
-			name:SetPoint( "TOPLEFT", bar, "TOPLEFT", 0, 0 );
-			name:SetPoint( "BOTTOMRIGHT", bar, "BOTTOMRIGHT", -40, 2 );
+			name:SetPoint( "TOPLEFT", bar, "TOPLEFT", TEXT_MARGIN, 0 );
+			name:SetPoint( "BOTTOMRIGHT", bar, "BOTTOMRIGHT", -45, 2 );
 			result.name = name;
 			
 			local time = bar:CreateFontString( nil, "OVERLAY", nil );
@@ -425,7 +441,7 @@ do
 			time:SetShadowColor( 0, 0, 0 );
 			time:SetShadowOffset( 1.25, -1.25 );
 			time:SetPoint( "TOPLEFT", name, "TOPRIGHT", 0, 0 );
-			time:SetPoint( "BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 2 );
+			time:SetPoint( "BOTTOMRIGHT", bar, "BOTTOMRIGHT", -TEXT_MARGIN, 2 );
 			result.time = time;
 			
 			local stacks = result:CreateFontString( nil, "OVERLAY", nil );
@@ -575,8 +591,8 @@ do
 		} );
 		border:SetBackdropColor( 0, 0, 0, 0 );
 		border:SetBackdropBorderColor( 0, 0, 0 );
-		border:SetPoint( "TOPLEFT", result, "TOPLEFT", -4.5, 5 );
-		border:SetPoint( "BOTTOMRIGHT", result, "BOTTOMRIGHT", 4.5, -4.5 );
+		border:SetPoint( "TOPLEFT", result, "TOPLEFT", -5, 5 );
+		border:SetPoint( "BOTTOMRIGHT", result, "BOTTOMRIGHT", 5, -5 );
 		result.border = border;		
 		
 		result:RegisterEvent( "PLAYER_ENTERING_WORLD" );
