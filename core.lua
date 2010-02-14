@@ -1,6 +1,11 @@
--- Configuration functions - DO NOT TOUCH
-local CreateSpellEntry = function( id, castByAnyone, overrideColor )
-	return { id = id, castByAnyone = castByAnyone, overrideColor = overrideColor };
+--[[ Configuration functions - DO NOT TOUCH
+	id - spell id
+	castByAnyone - show if aura wasn't created by player
+	color - bar color (nil for default color)
+	unitType - 0 all, 1 friendly, 2 enemy
+]]--
+local CreateSpellEntry = function( id, castByAnyone, color, unitType )
+	return { id = id, castByAnyone = castByAnyone, color = color, unitType = unitType or 0 };
 end
 
 local CreateColor = function( red, green, blue, alpha )
@@ -11,6 +16,13 @@ end
 
 -- Looks ugly when lower than 23
 local BAR_HEIGHT = 23;
+
+--[[ Layouts
+	1 - both player and target auras in one frame right above player frame
+	2 - player and target auras separated into two frames above player frame
+	3 - player, target and trinket auras separated into three frames above player frame
+]]--
+local LAYOUT = 3;
 
 -- Background alpha (range from 0 to 1)
 local BACKGROUND_ALPHA = 0.75;
@@ -27,7 +39,7 @@ local ICON_POSITION = 2;
 local ICON_COLOR = CreateColor( 100, 100, 100, 1 );
 
 -- Show spark
-local SPARK = true;
+local SPARK = false;
 
 -- Sets distance between right edge of bar and name and left edge of bar and time left
 local TEXT_MARGIN = 5;
@@ -42,33 +54,41 @@ local PERMANENT_AURA_VALUE = 1;
 	red, green, blue - range from 0 to 255
 	alpha - range from 0 to 1
 ]]--
-local PLAYER_BAR_COLOR = CreateColor( 50, 50, 50, 1 );
+local PLAYER_BAR_COLOR = CreateColor( 70, 70, 150, 1 );
 
 --[[ Target bar color
 	red, green, blue - range from 0 to 255
 	alpha - range from 0 to 1
 ]]--
-local TARGET_BAR_COLOR = CreateColor( 50, 50, 50, 1 );
+local TARGET_BAR_COLOR = CreateColor( 150, 70, 70, 1 );
 
---[[ Layouts
-	1 - both player and target buffs in one frame right above player frame
-	2 - player and target buffs separated into two frames above player frame
+--[[ Trinket bar color
+	red, green, blue - range from 0 to 255
+	alpha - range from 0 to 1
 ]]--
-local LAYOUT = 2;
+local TRINKET_BAR_COLOR = CreateColor( 70, 150, 70, 1 );
 
--- Global filter - mostly for trinket procs, delete or wrap into comment block --[[  ]] if you dont want to track those
-local GLOBAL_FILTER = {
---		CreateSpellEntry( 71432 ), -- Mote of Anger
+-- Trinket filter - mostly for trinket procs, delete or wrap into comment block --[[  ]] if you dont want to track those
+local TRINKET_FILTER = {
+		CreateSpellEntry( 71432 ), -- Mote of Anger
 		CreateSpellEntry( 72412 ), -- Frostforged Champion
+		CreateSpellEntry( 67671 ), -- Banner of Victory
 		CreateSpellEntry( 67703 ), CreateSpellEntry( 67708 ), CreateSpellEntry( 67772 ), CreateSpellEntry( 67773 ), -- Death Choice
-		CreateSpellEntry( 2825, true ), -- Bloodlust
-		CreateSpellEntry( 32182, true ), -- Heroism
+		CreateSpellEntry( 60229 ), -- Greatness (Strength)
+		CreateSpellEntry( 60233 ), -- Greatness (Agility)
+		CreateSpellEntry( 60234 ), -- Greatness (Intellect)
+		CreateSpellEntry( 60235 ), -- Greatness (Spirit)
 		CreateSpellEntry( 71485 ), CreateSpellEntry( 71556 ), -- Deathbringer's Will - Agility of the Vrykul
 		CreateSpellEntry( 71492 ), CreateSpellEntry( 71560 ), -- Deathbringer's Will - Speed of the Vrykul		
 		CreateSpellEntry( 71487 ), CreateSpellEntry( 71557 ), -- Deathbringer's Will - Precision of the Iron Dwarves
 		CreateSpellEntry( 71491 ), CreateSpellEntry( 71559 ), -- Deathbringer's Will - Aim of the Iron Dwarves
 		CreateSpellEntry( 71486 ), CreateSpellEntry( 71558 ), -- Deathbringer's Will - Power of the Taunka
 		CreateSpellEntry( 71484 ), CreateSpellEntry( 71561 ), -- Deathbringer's Will - Strength of the Taunka		
+		CreateSpellEntry( 45758 ), -- Hyperspeed Acceleration
+		CreateSpellEntry( 71402 ), -- Whispering Fang Skull
+		CreateSpellEntry( 26297 ), -- Troll Racial
+		CreateSpellEntry( 2825, true ), -- Bloodlust
+		CreateSpellEntry( 32182, true ), -- Heroism
 	};
 	
 --[[ Class specific filters
@@ -117,7 +137,11 @@ local CLASS_FILTERS = {
 			},
 			player = { 
 				CreateSpellEntry( 49222 ), -- Bone Shield
-				CreateSpellEntry( 53365 ), -- Unholy Strength
+				CreateSpellEntry( 57623 ), -- Horn of Winter
+			},
+			procs = {
+				CreateSpellEntry( 53365 ), -- Unholy Strength	
+				CreateSpellEntry( 71227 ), -- Sigil of the Hanged Man				
 			}
 		},
 		DRUID = { 
@@ -136,17 +160,25 @@ local CLASS_FILTERS = {
 				CreateSpellEntry( 29166 ), -- Innervate
 				CreateSpellEntry( 22812 ), -- Barkskin
 			},
+			procs = {
+			
+			}
 		},
 		HUNTER = { 
 			target = {
 				CreateSpellEntry( 49050 ), -- Aimed Shot
 				CreateSpellEntry( 49001 ), -- Serpent Sting
+				CreateSpellEntry( 52604 ), -- Scorpid Sting
+				CreateSpellEntry( 67993 ), -- Viper Sting
+				CreateSpellEntry( 53238 ), -- Piercing Shots
 				CreateSpellEntry( 63672 ), -- Black Arrow
 			},
 			player = {
 				CreateSpellEntry( 56453 ), -- Lock and Load
 				CreateSpellEntry( 34074 ), -- Aspect of the Viper
 				CreateSpellEntry( 6150 ), -- Quick Shots
+			},
+			procs = {
 				CreateSpellEntry( 70728 ), -- Exploit Weakness (2pc t10)
 				CreateSpellEntry( 71007 ), -- Stinger (4pc t10)
 			},
@@ -163,6 +195,9 @@ local CLASS_FILTERS = {
 				CreateSpellEntry( 43010 ), -- Fire Ward
 				CreateSpellEntry( 12472 ), -- Icy Veins
 				CreateSpellEntry( 44544 ), -- Fingers of Frost
+			},
+			procs = {
+			
 			},
 		},
 		PALADIN = { 
@@ -181,14 +216,16 @@ local CLASS_FILTERS = {
 				CreateSpellEntry( 53601 ), -- Sacred Shield
 				CreateSpellEntry( 54428 ), -- Divine Plea
 				CreateSpellEntry( 53488 ), -- The Art of War
-				CreateSpellEntry( 71187 ), -- Libram of Three Truths
 				CreateSpellEntry( 25771 ), -- Debuff: Forbearance
+			},
+			procs = {
+				CreateSpellEntry( 71187 ), -- Libram of Three Truths			
 			},
 		},
 		PRIEST = { 
 			target = { 
 				CreateSpellEntry( 48066 ), -- Power Word: Shield
-				CreateSpellEntry( 6788, true, CreateColor( 150, 50, 50, 1 ) ), -- Weakened Soul
+				CreateSpellEntry( 6788, true, CreateColor( 150, 50, 50, 1 ), 1 ), -- Weakened Soul
 				CreateSpellEntry( 48068 ), -- Renew
 				CreateSpellEntry( 48111 ), -- Prayer of Mending
 				CreateSpellEntry( 552 ), -- Abolish Disease
@@ -202,20 +239,33 @@ local CLASS_FILTERS = {
 				CreateSpellEntry( 48168 ), -- Inner Fire
 				CreateSpellEntry( 47585 ), -- Dispersion
 			},
+			procs = {
+				
+			},
 		},
 		ROGUE = { 
 			target = { 
+				CreateSpellEntry( 1833 ), -- Cheap Shot
+				CreateSpellEntry( 408 ), CreateSpellEntry( 8643 ), -- Kidney Shot      
+				CreateSpellEntry( 1776 ), -- Gouge   
+				CreateSpellEntry( 2094 ), -- Blind
+				CreateSpellEntry( 8647 ), -- Expose Armor
+				CreateSpellEntry( 51722 ), -- Dismantle
+				CreateSpellEntry( 57970 ), -- Deadly Poison
+				CreateSpellEntry( 57975 ), -- Wound Posion
+				CreateSpellEntry( 3409 ),  -- Crippling Poison      
+				CreateSpellEntry( 5760 ), -- Mind-Numbling Poison
+				CreateSpellEntry( 51724 ), -- Sap			
 				CreateSpellEntry( 48672 ), -- Rupture
 				CreateSpellEntry( 48676 ), -- Garrote
-				CreateSpellEntry( 57969 ), -- Deadly Poison
-				CreateSpellEntry( 5760 ), -- Mind-numbing Poison
-				CreateSpellEntry( 57975 ), -- Wound Poison
-				CreateSpellEntry( 3409 ), -- Crippling Poison
 			},
 			player = { 
 				CreateSpellEntry( 57993 ), -- Envenom
 				CreateSpellEntry( 8647 ), -- Expose Armor
 				CreateSpellEntry( 6774 ), -- Slice and Dice				
+			},
+			procs = {
+				
 			},
 		},
 		SHAMAN = {
@@ -230,6 +280,9 @@ local CLASS_FILTERS = {
 				CreateSpellEntry( 30823 ), -- Shamanistic Rage
 				CreateSpellEntry( 53817 ), -- Maelstrom Weapon
 			},
+			procs = {
+				
+			},
 		},
 		WARLOCK = { 
 			target = { 
@@ -240,6 +293,9 @@ local CLASS_FILTERS = {
 			},
 			player = {            
 				CreateSpellEntry( 54277 ), -- Backdraft
+			},
+			procs = {
+				
 			},
 		},
 		WARRIOR = { 
@@ -257,6 +313,9 @@ local CLASS_FILTERS = {
 				CreateSpellEntry( 871 ), -- Shield Wall
 				CreateSpellEntry( 1719 ), -- Recklessness
 				CreateSpellEntry( 20230 ), -- Retaliation
+			},
+			procs = {
+				
 			},
 		},
 	};
@@ -280,6 +339,7 @@ do
 		if ( not UnitExists( unit ) ) then return 0; end
 	
 		local count = 0;
+		local unitIsFriend = UnitIsFriend( "player", unit );
 	
 		for _, auraType in ipairs( { "HELPFUL", "HARMFUL" } ) do
 			for index = 1, 40 do
@@ -288,9 +348,10 @@ do
 					break;
 				end							
 				
-				local filterInfo = ( ( self.unit ~= "target" or unit ~= "player" or not UnitIsUnit( "player", "target" ) ) and CheckFilter( self, spellId, caster, self.globalFilter ) )or CheckFilter( self, spellId, caster, filter );
-				if ( filterInfo ) then 
-					tinsert( result, { name = name, texture = texture, duration = duration, expirationTime = expirationTime, stacks = stacks, unit = unit, overrideColor = filterInfo.overrideColor } );
+				--local filterInfo = ( ( self.unit ~= "target" or unit ~= "player" or not UnitIsUnit( "player", "target" ) ) and CheckFilter( self, spellId, caster, self.globalFilter ) )or CheckFilter( self, spellId, caster, filter );
+				local filterInfo = CheckFilter( self, spellId, caster, filter );
+				if ( filterInfo and ( filterInfo.unitType ~= 1 or unitIsFriend ) and ( filterInfo.unitType ~= 2 or not unitIsFriend ) ) then 					
+					tinsert( result, { name = name, texture = texture, duration = duration, expirationTime = expirationTime, stacks = stacks, unit = unit, color = filterInfo.color } );
 					count = count + 1;
 				end
 			end
@@ -353,16 +414,26 @@ do
 		return self.count;
 	end
 	
-	local SetFilter = function( self, filter )
-		self.filter = filter;
+	local AddFilter = function( self, filter, defaultColor )
+		if ( filter == nil ) then return; end
+	
+		for _, v in pairs( filter ) do
+			if ( defaultColor ~= nil and v.color == nil ) then
+				v.color = defaultColor;
+			end
+			table.insert( self.filter, v );
+		end
 	end
 	
-	local SetPlayerFilter = function( self, filter )
-		self.playerFilter = filter;
-	end
+	local AddPlayerFilter = function( self, filter, defaultColor )
+		if ( filter == nil ) then return; end
 	
-	local SetGlobalFilter = function( self, filter )
-		self.globalFilter = filter;
+		for _, v in pairs( filter ) do
+			if ( defaultColor ~= nil and v.color == nil ) then
+				v.color = defaultColor;
+			end
+			table.insert( self.playerFilter, v );
+		end
 	end
 	
 	local GetUnit = function( self )
@@ -379,10 +450,29 @@ do
 	
 	-- constructor
 	CreateUnitAuraDataSource = function( unit )
-		local result = { Sort = Sort, Update = Update, Get = Get, Count = Count, SetSortDirection = SetSortDirection, GetSortDirection = GetSortDirection, SetFilter = SetFilter, SetPlayerFilter = SetPlayerFilter, SetGlobalFilter = SetGlobalFilter, GetUnit = GetUnit, SetIncludePlayer = SetIncludePlayer, GetIncludePlayer = GetIncludePlayer, unit = unit, includePlayer = false };
+		local result = {  };
+
+		result.Sort = Sort;
+		result.Update = Update;
+		result.Get = Get;
+		result.Count = Count;
+		result.SetSortDirection = SetSortDirection;
+		result.GetSortDirection = GetSortDirection;
+		result.AddFilter = AddFilter;
+		result.AddPlayerFilter = AddPlayerFilter;
+		result.GetUnit = GetUnit; 
+		result.SetIncludePlayer = SetIncludePlayer; 
+		result.GetIncludePlayer = GetIncludePlayer; 
+		
+		result.unit = unit;
+		result.includePlayer = false;
+		result.filter = { };
+		result.playerFilter = { };
+		
 		result:SetSortDirection( true );
 		result:Update();
 		result:Sort();
+		
 		return result;
 	end
 end
@@ -603,12 +693,8 @@ do
 		end	
 		
 		line:SetAuraInfo( auraInfo );
-		if ( auraInfo.overrideColor ) then
-			line:SetColor( auraInfo.overrideColor );
-		elseif ( auraInfo.unit == "player" and self.playerAuraColor ) then
-			line:SetColor( self.playerAuraColor );
-		elseif ( self.unitAuraColor ) then
-			line:SetColor( self.unitAuraColor );
+		if ( auraInfo.color ) then
+			line:SetColor( auraInfo.color );
 		end
 		
 		line:Show();
@@ -675,14 +761,6 @@ do
 	local function SetHiddenHeight( self, height )
 		self.hiddenHeight = height;
 	end
-	
-	local function SetPlayerAuraColor( self, color )
-		self.playerAuraColor = color;
-	end
-
-	local function SetUnitAuraColor( self, color )
-		self.unitAuraColor = color;
-	end	
 
 	-- constructor
 	CreateAuraBarFrame = function( dataSource, parent )
@@ -726,8 +804,6 @@ do
 		
 		result.Render = Render;
 		result.SetHiddenHeight = SetHiddenHeight;
-		result.SetPlayerAuraColor = SetPlayerAuraColor;
-		result.SetUnitAuraColor = SetUnitAuraColor;
 		
 		return result;
 	end
@@ -739,26 +815,20 @@ local classFilter = CLASS_FILTERS[ playerClass ];
 if ( LAYOUT == 1 ) then
 	local dataSource = CreateUnitAuraDataSource( "target" );
 
-	if ( GLOBAL_FILTER ) then
-		dataSource:SetGlobalFilter( GLOBAL_FILTER );	
-	end
-
+	dataSource:AddPlayerFilter( TRINKET_FILTER, TRINKET_BAR_COLOR );
+	
 	if ( classFilter ) then
-		dataSource:SetFilter( classFilter.target );
-		dataSource:SetPlayerFilter( classFilter.player );
+		dataSource:AddFilter( classFilter.target, TARGET_BAR_COLOR );
+		dataSource:AddPlayerFilter( classFilter.player, PLAYER_BAR_COLOR );
+		dataSource:AddPlayerFilter( classFilter.procs, TRINKET_BAR_COLOR );
 		dataSource:SetIncludePlayer( classFilter.player ~= nil );
 	end
 
 	local frame = CreateAuraBarFrame( dataSource, oUF_Tukz_player );
-	frame:SetPlayerAuraColor( PLAYER_BAR_COLOR );
-	frame:SetUnitAuraColor( TARGET_BAR_COLOR );
-
 	local yOffset = 1;
-
 	if ( playerClass == "DEATHKNIGHT" or playerClass == "SHAMAN" ) then
 		yOffset = yOffset + 8;
 	end
-
 	frame:SetPoint( "BOTTOMLEFT", oUF_Tukz_player, "TOPLEFT", 0, yOffset );
 	frame:SetPoint( "BOTTOMRIGHT", oUF_Tukz_player, "TOPRIGHT", 0, yOffset );
 	frame:Show(); 
@@ -766,38 +836,67 @@ elseif ( LAYOUT == 2 ) then
 	local targetDataSource = CreateUnitAuraDataSource( "target" );
 	local playerDataSource = CreateUnitAuraDataSource( "player" );
 
-	if ( GLOBAL_FILTER ) then
-		targetDataSource:SetGlobalFilter( GLOBAL_FILTER );
-		playerDataSource:SetGlobalFilter( GLOBAL_FILTER );
-	end
+	playerDataSource:AddFilter( TRINKET_FILTER, TRINKET_BAR_COLOR );
 
 	if ( classFilter ) then
-		targetDataSource:SetFilter( classFilter.target );
-		targetDataSource:SetIncludePlayer( false );
-		
-		playerDataSource:SetFilter( classFilter.player );
-		playerDataSource:SetIncludePlayer( false );
+		targetDataSource:AddFilter( classFilter.target, TARGET_BAR_COLOR );
+		playerDataSource:AddFilter( classFilter.procs, TRINKET_BAR_COLOR );
+		playerDataSource:AddFilter( classFilter.player, PLAYER_BAR_COLOR );
 	end
 
-	local playerFrame = CreateAuraBarFrame( playerDataSource, oUF_Tukz_player );
-	playerFrame:SetUnitAuraColor( PLAYER_BAR_COLOR );
-	
 	local yOffset = 6;
+	
+	local playerFrame = CreateAuraBarFrame( playerDataSource, oUF_Tukz_player );	
 	playerFrame:SetHiddenHeight( -yOffset );
-
 	if ( playerClass == "DEATHKNIGHT" or playerClass == "SHAMAN" ) then
-		yOffset = yOffset + 8;
+		playerFrame:SetPoint( "BOTTOMLEFT", oUF_Tukz_player, "TOPLEFT", 0, yOffset + 8 );
+		playerFrame:SetPoint( "BOTTOMRIGHT", oUF_Tukz_player, "TOPRIGHT", 0, yOffset + 8 );
+	else
+		playerFrame:SetPoint( "BOTTOMLEFT", oUF_Tukz_player, "TOPLEFT", 0, yOffset );
+		playerFrame:SetPoint( "BOTTOMRIGHT", oUF_Tukz_player, "TOPRIGHT", 0, yOffset );
 	end
-
-	playerFrame:SetPoint( "BOTTOMLEFT", oUF_Tukz_player, "TOPLEFT", 0, yOffset );
-	playerFrame:SetPoint( "BOTTOMRIGHT", oUF_Tukz_player, "TOPRIGHT", 0, yOffset );
 	playerFrame:Show();
 
 	local targetFrame = CreateAuraBarFrame( targetDataSource, oUF_Tukz_player );
-	targetFrame:SetUnitAuraColor( TARGET_BAR_COLOR );
-	targetFrame:SetPoint( "BOTTOMLEFT", playerFrame, "TOPLEFT", 0, 6 );
-	targetFrame:SetPoint( "BOTTOMRIGHT", playerFrame, "TOPRIGHT", 0, 6 );
+	targetFrame:SetPoint( "BOTTOMLEFT", playerFrame, "TOPLEFT", 0, yOffset );
+	targetFrame:SetPoint( "BOTTOMRIGHT", playerFrame, "TOPRIGHT", 0, yOffset );
 	targetFrame:Show();
+elseif ( LAYOUT == 3 ) then
+	local yOffset = 6;
+
+	local targetDataSource = CreateUnitAuraDataSource( "target" );
+	local playerDataSource = CreateUnitAuraDataSource( "player" );
+	local trinketDataSource = CreateUnitAuraDataSource( "player" );
+	
+	if ( classFilter ) then
+		targetDataSource:AddFilter( classFilter.target, TARGET_BAR_COLOR );		
+		playerDataSource:AddFilter( classFilter.player, PLAYER_BAR_COLOR );
+		trinketDataSource:AddFilter( classFilter.procs, TRINKET_BAR_COLOR );
+	end
+	trinketDataSource:AddFilter( TRINKET_FILTER, TRINKET_BAR_COLOR );
+
+	local playerFrame = CreateAuraBarFrame( playerDataSource, oUF_Tukz_player );
+	playerFrame:SetHiddenHeight( -yOffset );
+	if ( playerClass == "DEATHKNIGHT" or playerClass == "SHAMAN" ) then
+		playerFrame:SetPoint( "BOTTOMLEFT", oUF_Tukz_player, "TOPLEFT", 0, yOffset + 8 );
+		playerFrame:SetPoint( "BOTTOMRIGHT", oUF_Tukz_player, "TOPRIGHT", 0, yOffset + 8 );
+	else
+		playerFrame:SetPoint( "BOTTOMLEFT", oUF_Tukz_player, "TOPLEFT", 0, yOffset );
+		playerFrame:SetPoint( "BOTTOMRIGHT", oUF_Tukz_player, "TOPRIGHT", 0, yOffset );
+	end
+	playerFrame:Show();
+
+	local targetFrame = CreateAuraBarFrame( targetDataSource, oUF_Tukz_player );
+	targetFrame:SetHiddenHeight( -yOffset );
+	targetFrame:SetPoint( "BOTTOMLEFT", playerFrame, "TOPLEFT", 0, yOffset );
+	targetFrame:SetPoint( "BOTTOMRIGHT", playerFrame, "TOPRIGHT", 0, yOffset );
+	targetFrame:Show();
+	
+	local trinketFrame = CreateAuraBarFrame( trinketDataSource, oUF_Tukz_player );
+	trinketFrame:SetHiddenHeight( -yOffset );
+	trinketFrame:SetPoint( "BOTTOMLEFT", targetFrame, "TOPLEFT", 0, yOffset );
+	trinketFrame:SetPoint( "BOTTOMRIGHT", targetFrame, "TOPRIGHT", 0, yOffset );
+	trinketFrame:Show();
 else
 	error( "Undefined layout " .. tostring( LAYOUT ) );
 end
