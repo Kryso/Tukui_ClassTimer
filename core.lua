@@ -15,8 +15,13 @@ local BAR_HEIGHT = 23;
 -- Background alpha (range from 0 to 1)
 local BACKGROUND_ALPHA = 0.75;
 
--- Show icons outside of frame
-local ICONS_OUTSIDE = true;
+--[[ Show icons outside of frame (flags - that means you can combine them - for example 3 means it will be outside the right edge)
+	0 - left
+	1 - right
+	2 - outside
+	4 - hide
+]]--
+local ICON_POSITION = 2;
 
 -- Sets distance between right edge of bar and name and left edge of bar and time left
 local TEXT_MARGIN = 5;
@@ -174,20 +179,51 @@ local CLASS_FILTERS = {
 			},
 		},
 		ROGUE = { 
-			target = { },
-			player = { },
+			target = { 
+				CreateSpellEntry( 48672 ), -- Rupture
+				CreateSpellEntry( 48676 ), -- Garrote
+				CreateSpellEntry( 57969 ), -- Deadly Poison
+				CreateSpellEntry( 5760 ), -- Mind-numbing Poison
+				CreateSpellEntry( 57975 ), -- Wound Poison
+				CreateSpellEntry( 3409 ), -- Crippling Poison
+			},
+			player = { 
+				CreateSpellEntry( 57993 ), -- Envenom
+				CreateSpellEntry( 8647 ), -- Expose Armor
+				CreateSpellEntry( 6774 ), -- Slice and Dice				
+			},
 		},
 		SHAMAN = {
 			target = { },
 			player = { },
 		},
 		WARLOCK = { 
-			target = { },
-			player = { },
+			target = { 
+				CreateSpellEntry( 17962 ), -- Conflagration
+				CreateSpellEntry( 47811 ), -- Immolation
+				CreateSpellEntry( 47867 ), -- Curse of Doom
+				CreateSpellEntry( 47836 ), -- Seed of Corruption
+			},
+			player = {            
+				CreateSpellEntry( 54277 ), -- Backdraft
+			},
 		},
 		WARRIOR = { 
-			target = { },
-			player = { },
+			target = {
+				CreateSpellEntry( 47465 ), -- Rend
+				CreateSpellEntry( 47486 ), -- Mortal Strike
+				CreateSpellEntry( 47437 ), -- Demoralizing Shout
+				CreateSpellEntry( 64382 ), -- Shattering Throw
+			},
+			player = { 
+				CreateSpellEntry( 47440 ), -- Commanding Shout
+				CreateSpellEntry( 47436 ), -- Battle Shout
+				CreateSpellEntry( 55694 ), -- Enraged Regeneration
+				CreateSpellEntry( 23920 ), -- Spell Reflection
+				CreateSpellEntry( 871 ), -- Shield Wall
+				CreateSpellEntry( 1719 ), -- Recklessness
+				CreateSpellEntry( 20230 ), -- Retaliation
+			},
 		},
 	};
 
@@ -350,6 +386,8 @@ do
 		
 		-- public
 		local SetIcon = function( self, icon )
+			if ( not self.icon ) then return; end
+			
 			self.icon:SetTexture( icon );
 		end
 		
@@ -398,31 +436,51 @@ do
 		CreateAuraBar = function( parent )
 			local result = CreateFrame( "Frame", nil, parent, nil );
 
-			local icon = result:CreateTexture( nil, "ARTWORK", nil );			
-			if ( ICONS_OUTSIDE ) then
-				icon:SetPoint( "TOPLEFT", result, "TOPLEFT", -BAR_HEIGHT - 6, 0 );
-				icon:SetPoint( "BOTTOMRIGHT", result, "TOPLEFT", -6, -BAR_HEIGHT );			
-			else
-				icon:SetPoint( "TOPLEFT", result, "TOPLEFT", 0, 0 );
-				icon:SetPoint( "BOTTOMRIGHT", result, "TOPLEFT", BAR_HEIGHT, -BAR_HEIGHT );
-			end
-			result.icon = icon;
+			local icon = result:CreateTexture( nil, "ARTWORK", nil );		
+
+			if ( bit.band( ICON_POSITION, 4 ) == 0 ) then
+				local iconAnchor1;
+				local iconAnchor2;
+				local iconOffset;
+				if ( bit.band( ICON_POSITION, 1 ) == 1 ) then
+					iconAnchor1 = "TOPLEFT";
+					iconAnchor2 = "TOPRIGHT";
+					iconOffset = 1;
+				else
+					iconAnchor1 = "TOPRIGHT";
+					iconAnchor2 = "TOPLEFT";
+					iconOffset = -1;
+				end			
+				if ( bit.band( ICON_POSITION, 2 ) == 2 ) then
+					icon:SetPoint( iconAnchor1, result, iconAnchor2, iconOffset * 6, 0 );
+				else
+					icon:SetPoint( iconAnchor1, result, iconAnchor2, iconOffset * -BAR_HEIGHT, 0 );
+				end			
+				icon:SetWidth( BAR_HEIGHT );
+				icon:SetHeight( BAR_HEIGHT );			
+				result.icon = icon;
 			
-			local iconOverlay = result:CreateTexture( nil, "OVERLAY", nil );
-			iconOverlay:SetPoint( "TOPLEFT", icon, "TOPLEFT", -1.5, 1 );
-			iconOverlay:SetPoint( "BOTTOMRIGHT", icon, "BOTTOMRIGHT", 1, -1 );
-			iconOverlay:SetTexture( [=[Interface\Addons\Tukui\media\buttonTex]=] );
-			iconOverlay:SetVertexColor( 1, 1, 1 );
-			result.icon.overlay = iconOverlay;		
-		
+				local iconOverlay = result:CreateTexture( nil, "OVERLAY", nil );
+				iconOverlay:SetPoint( "TOPLEFT", icon, "TOPLEFT", -1.5, 1 );
+				iconOverlay:SetPoint( "BOTTOMRIGHT", icon, "BOTTOMRIGHT", 1, -1 );
+				iconOverlay:SetTexture( [=[Interface\Addons\Tukui\media\buttonTex]=] );
+				iconOverlay:SetVertexColor( 1, 1, 1 );
+				result.icon.overlay = iconOverlay;		
+			end
+			
 			local bar = CreateFrame( "StatusBar", nil, result, nil );
 			bar:SetStatusBarTexture( [=[Interface\Addons\Tukui\media\normTex]=] );
-			if ( ICONS_OUTSIDE ) then
+			if ( bit.band( ICON_POSITION, 2 ) == 2 or bit.band( ICON_POSITION, 4 ) == 4 ) then
 				bar:SetPoint( "TOPLEFT", result, "TOPLEFT", 0, -1 );
 				bar:SetPoint( "BOTTOMRIGHT", result, "BOTTOMRIGHT", 0, 0 );
 			else
-				bar:SetPoint( "TOPLEFT", result.icon, "TOPRIGHT", 1, -1 );
-				bar:SetPoint( "BOTTOMRIGHT", result, "BOTTOMRIGHT", 0, 0 );
+				if ( bit.band( ICON_POSITION, 1 ) == 1 ) then
+					bar:SetPoint( "TOPLEFT", result, "TOPLEFT", 0, -1 );
+					bar:SetPoint( "BOTTOMRIGHT", result.icon, "BOTTOMLEFT", -1, 0 );
+				else
+					bar:SetPoint( "TOPLEFT", result.icon, "TOPRIGHT", 1, -1 );
+					bar:SetPoint( "BOTTOMRIGHT", result, "BOTTOMRIGHT", 0, 0 );
+				end	
 			end
 			result.bar = bar;
 			
