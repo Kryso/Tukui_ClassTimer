@@ -3,9 +3,10 @@
 	castByAnyone - show if aura wasn't created by player
 	color - bar color (nil for default color)
 	unitType - 0 all, 1 friendly, 2 enemy
+	castSpellId - fill only if you want to see line on bar that indicates if its safe to start casting spell and not clip the last tick, also note that this can be different from aura id 
 ]]--
-local CreateSpellEntry = function( id, castByAnyone, color, unitType )
-	return { id = id, castByAnyone = castByAnyone, color = color, unitType = unitType or 0 };
+local CreateSpellEntry = function( id, castByAnyone, color, unitType, castSpellId )
+	return { id = id, castByAnyone = castByAnyone, color = color, unitType = unitType or 0, castSpellId = castSpellId };
 end
 
 local CreateColor = function( red, green, blue, alpha )
@@ -43,6 +44,12 @@ local ICON_COLOR = CreateColor( 120, 120, 120, 1 );
 
 -- Show spark
 local SPARK = false;
+
+-- Show cast separator
+local CAST_SEPARATOR = true;
+
+-- Sets cast separator color
+local CAST_SEPARATOR_COLOR = CreateColor( 0, 0, 0, 0.5 );
 
 -- Sets distance between right edge of bar and name and left edge of bar and time left
 local TEXT_MARGIN = 5;
@@ -181,7 +188,7 @@ local CLASS_FILTERS = {
 			target = { 
 				CreateSpellEntry( 53251 ), -- Wild Growth
 				CreateSpellEntry( 48441 ), -- Rejuvenation
-				CreateSpellEntry( 48443 ), -- Regrowth
+				CreateSpellEntry( 48443, false, nil, nil, 48443 ), -- Regrowth
 				CreateSpellEntry( 48468 ), -- Insect Swarm
 				CreateSpellEntry( 48463 ), -- Moonfire
 				CreateSpellEntry( 48451 ), -- Lifebloom
@@ -264,7 +271,7 @@ local CLASS_FILTERS = {
 				CreateSpellEntry( 48111 ), -- Prayer of Mending
 				CreateSpellEntry( 552 ), -- Abolish Disease
 				CreateSpellEntry( 33206 ), -- Pain Suppression
-				CreateSpellEntry( 48160 ), -- Vampiric Touch
+				CreateSpellEntry( 48160, false, nil, nil, 48160 ), -- Vampiric Touch
 				CreateSpellEntry( 48125 ), -- Shadow Word: Pain
 				CreateSpellEntry( 48300 ), -- Devouring Plague
 			},
@@ -321,7 +328,7 @@ local CLASS_FILTERS = {
 		WARLOCK = { 
 			target = { 
 				CreateSpellEntry( 17962 ), -- Conflagration
-				CreateSpellEntry( 47811 ), -- Immolation
+				CreateSpellEntry( 47811, false, nil, nil, 47811 ), -- Immolate
 				CreateSpellEntry( 47867 ), -- Curse of Doom
 				CreateSpellEntry( 47836 ), -- Seed of Corruption
 			},
@@ -387,7 +394,7 @@ do
 				
 				local filterInfo = CheckFilter( self, spellId, caster, filter );
 				if ( filterInfo and ( filterInfo.unitType ~= 1 or unitIsFriend ) and ( filterInfo.unitType ~= 2 or not unitIsFriend ) ) then 					
-					tinsert( result, { name = name, texture = texture, duration = duration, expirationTime = expirationTime, stacks = stacks, unit = unit, color = filterInfo.color, isDebuff = isDebuff, defaultColor = filterInfo.defaultColor, debuffColor = filterInfo.debuffColor } );
+					tinsert( result, { name = name, texture = texture, duration = duration, expirationTime = expirationTime, stacks = stacks, unit = unit, color = filterInfo.color, isDebuff = isDebuff, defaultColor = filterInfo.defaultColor, debuffColor = filterInfo.debuffColor, castSpellId = filterInfo.castSpellId } );
 					count = count + 1;
 				end
 			end
@@ -607,9 +614,23 @@ do
 				end
 				self.time:SetText( timeText );
 				
+				local barWidth = self.bar:GetWidth();
+				
 				local spark = self.spark;
 				if ( spark ) then			
-					spark:SetPoint( "CENTER", self.bar, "LEFT", self.bar:GetWidth() * remaining / self.duration, 0 );
+					spark:SetPoint( "CENTER", self.bar, "LEFT", barWidth * remaining / self.duration, 0 );
+				end
+				
+				local castSeparator = self.castSeparator;
+				if ( castSeparator and self.castSpellId ) then
+					local _, _, _, _, _, _, castTime, _, _ = GetSpellInfo( self.castSpellId );
+
+					castTime = castTime / 1000;
+					if ( castTime and remaining > castTime ) then
+						castSeparator:SetPoint( "CENTER", self.bar, "LEFT", barWidth * ( remaining - castTime ) / self.duration, 0 );
+					else
+						castSeparator:Hide();
+					end
 				end
 			end
 		end
@@ -673,11 +694,25 @@ do
 			self.bar:SetStatusBarColor( unpack( color ) );
 		end
 		
+		local SetCastSpellId = function( self, id )
+			self.castSpellId = id;
+			
+			local castSeparator = self.castSeparator;
+			if ( castSeparator ) then
+				if ( id ) then
+					self.castSeparator:Show();
+				else
+					self.castSeparator:Hide();
+				end
+			end
+		end
+		
 		local SetAuraInfo = function( self, auraInfo )
 			self:SetName( auraInfo.name );
 			self:SetIcon( auraInfo.texture );	
 			self:SetTime( auraInfo.expirationTime, auraInfo.duration );
 			self:SetStacks( auraInfo.stacks );
+			self:SetCastSpellId( auraInfo.castSpellId );
 		end
 		
 		-- constructor
@@ -747,6 +782,15 @@ do
 				spark:Show();
 				result.spark = spark;
 			end
+			
+			if ( CAST_SEPARATOR ) then
+				local castSeparator = bar:CreateTexture( nil, "OVERLAY", nil );
+				castSeparator:SetTexture( unpack( CAST_SEPARATOR_COLOR ) );
+				castSeparator:SetWidth( 1 );
+				castSeparator:SetHeight( BAR_HEIGHT );
+				castSeparator:Show();
+				result.castSeparator = castSeparator;
+			end
 						
 			local name = bar:CreateFontString( nil, "OVERLAY", nil );
 			name:SetFont( unpack( MASTER_FONT ) );
@@ -772,6 +816,7 @@ do
 			result.SetStacks = SetStacks;
 			result.SetAuraInfo = SetAuraInfo;
 			result.SetColor = SetColor;
+			result.SetCastSpellId = SetCastSpellId;
 			
 			return result;
 		end
