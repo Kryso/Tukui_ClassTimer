@@ -47,6 +47,12 @@ local SPARK = false;
 -- Sets distance between right edge of bar and name and left edge of bar and time left
 local TEXT_MARGIN = 5;
 
+-- Sets font for all texts
+local MASTER_FONT = { [=[Interface\Addons\Tukui\media\Russel Square LT.ttf]=], 12, "OUTLINE" };
+
+-- Sets font for stack count
+local STACKS_FONT = { [=[Interface\Addons\Tukui\media\Russel Square LT.ttf]=], 11, "OUTLINE" };
+
 --[[ Permanent aura bars
 	1 filled 		
 	0 empty
@@ -105,11 +111,17 @@ local TRINKET_FILTER = {
 		CreateSpellEntry( 71491 ), CreateSpellEntry( 71559 ), -- Deathbringer's Will - Aim of the Iron Dwarves
 		CreateSpellEntry( 71486 ), CreateSpellEntry( 71558 ), -- Deathbringer's Will - Power of the Taunka
 		CreateSpellEntry( 71484 ), CreateSpellEntry( 71561 ), -- Deathbringer's Will - Strength of the Taunka		
-		CreateSpellEntry( 45758 ), -- Hyperspeed Acceleration
 		CreateSpellEntry( 71402 ), -- Whispering Fang Skull
-		CreateSpellEntry( 26297 ), -- Troll Racial
+		CreateSpellEntry( 67684 ), -- Hospitality / Talisman of Resurgence
+		CreateSpellEntry( 71570 ), -- Cultivated Power / Muradin's Spyglass
+		CreateSpellEntry( 71605 ), CreateSpellEntry( 71636 ), -- Phylactery of the Nameless Lich
+		CreateSpellEntry( 59626 ), -- Black Magic
+		CreateSpellEntry( 45758 ), -- Hyperspeed Acceleration
+		CreateSpellEntry( 55637 ), -- Lightweave
+		
 		CreateSpellEntry( 2825, true ), -- Bloodlust
 		CreateSpellEntry( 32182, true ), -- Heroism
+		CreateSpellEntry( 26297 ), -- Troll Racial
 	};
 	
 --[[ Class specific filters
@@ -172,17 +184,17 @@ local CLASS_FILTERS = {
 				CreateSpellEntry( 48443 ), -- Regrowth
 				CreateSpellEntry( 48468 ), -- Insect Swarm
 				CreateSpellEntry( 48463 ), -- Moonfire
+				CreateSpellEntry( 48451 ), -- Lifebloom
 			},
 			player = { 
-				CreateSpellEntry( 16870 ), -- Clearcasting
-				CreateSpellEntry( 48518 ), -- Eclipse starfire
-				CreateSpellEntry( 48517 ), -- Eclipse wrath
 				CreateSpellEntry( 53201 ), -- Starfall
 				CreateSpellEntry( 29166 ), -- Innervate
 				CreateSpellEntry( 22812 ), -- Barkskin
 			},
 			procs = {
-			
+				CreateSpellEntry( 16870 ), -- Clearcasting			
+				CreateSpellEntry( 48518 ), -- Eclipse starfire
+				CreateSpellEntry( 48517 ), -- Eclipse wrath
 			}
 		},
 		HUNTER = { 
@@ -195,11 +207,11 @@ local CLASS_FILTERS = {
 				CreateSpellEntry( 63672 ), -- Black Arrow
 			},
 			player = {
-				CreateSpellEntry( 56453 ), -- Lock and Load
 				CreateSpellEntry( 34074 ), -- Aspect of the Viper
-				CreateSpellEntry( 6150 ), -- Quick Shots
 			},
 			procs = {
+				CreateSpellEntry( 6150 ), -- Quick Shots
+				CreateSpellEntry( 56453 ), -- Lock and Load
 				CreateSpellEntry( 70728 ), -- Exploit Weakness (2pc t10)
 				CreateSpellEntry( 71007 ), -- Stinger (4pc t10)
 			},
@@ -215,10 +227,11 @@ local CLASS_FILTERS = {
 				CreateSpellEntry( 43012 ), -- Frost Ward
 				CreateSpellEntry( 43010 ), -- Fire Ward
 				CreateSpellEntry( 12472 ), -- Icy Veins
-				CreateSpellEntry( 44544 ), -- Fingers of Frost
+				CreateSpellEntry( 12042 ), -- Arcane Power
 			},
 			procs = {
-			
+				CreateSpellEntry( 44544 ), -- Fingers of Frost	
+				CreateSpellEntry( 44401 ), -- Missile Barrage Proc				
 			},
 		},
 		PALADIN = { 
@@ -236,10 +249,10 @@ local CLASS_FILTERS = {
 				CreateSpellEntry( 31884 ), -- Avenging Wrath
 				CreateSpellEntry( 53601 ), -- Sacred Shield
 				CreateSpellEntry( 54428 ), -- Divine Plea
-				CreateSpellEntry( 53488 ), -- The Art of War
 				CreateSpellEntry( 25771 ), -- Debuff: Forbearance
 			},
 			procs = {
+				CreateSpellEntry( 53488 ), -- The Art of War
 				CreateSpellEntry( 71187 ), -- Libram of Three Truths			
 			},
 		},
@@ -251,17 +264,18 @@ local CLASS_FILTERS = {
 				CreateSpellEntry( 48111 ), -- Prayer of Mending
 				CreateSpellEntry( 552 ), -- Abolish Disease
 				CreateSpellEntry( 33206 ), -- Pain Suppression
-				CreateSpellEntry( 10060 ), -- Power Infusion
 				CreateSpellEntry( 48160 ), -- Vampiric Touch
 				CreateSpellEntry( 48125 ), -- Shadow Word: Pain
 				CreateSpellEntry( 48300 ), -- Devouring Plague
 			},
 			player = {
+				CreateSpellEntry( 10060 ), -- Power Infusion
 				CreateSpellEntry( 48168 ), -- Inner Fire
 				CreateSpellEntry( 47585 ), -- Dispersion
 			},
 			procs = {
-				
+				CreateSpellEntry( 63734 ), -- Serendipity
+				CreateSpellEntry( 33151 ), -- Surge of Light
 			},
 		},
 		ROGUE = { 
@@ -282,9 +296,8 @@ local CLASS_FILTERS = {
 			},
 			player = { 
 				CreateSpellEntry( 57993 ), -- Envenom
-				CreateSpellEntry( 8647 ), -- Expose Armor
 				CreateSpellEntry( 6774 ), -- Slice and Dice			
-				CreateSpellEntry( 58155 ), -- Hunger for Blood
+				CreateSpellEntry( 63848 ), -- Hunger for Blood
 			},
 			procs = {
 				
@@ -300,10 +313,9 @@ local CLASS_FILTERS = {
 				CreateSpellEntry( 49281 ), -- Lightning Shield
 				CreateSpellEntry( 57960 ), -- Water Shield
 				CreateSpellEntry( 30823 ), -- Shamanistic Rage
-				CreateSpellEntry( 53817 ), -- Maelstrom Weapon
 			},
 			procs = {
-				
+				CreateSpellEntry( 53817 ), -- Maelstrom Weapon				
 			},
 		},
 		WARLOCK = { 
@@ -314,10 +326,10 @@ local CLASS_FILTERS = {
 				CreateSpellEntry( 47836 ), -- Seed of Corruption
 			},
 			player = {            
-				CreateSpellEntry( 54277 ), -- Backdraft
+
 			},
 			procs = {
-				
+				CreateSpellEntry( 54277 ), -- Backdraft				
 			},
 		},
 		WARRIOR = { 
@@ -326,6 +338,7 @@ local CLASS_FILTERS = {
 				CreateSpellEntry( 47486 ), -- Mortal Strike
 				CreateSpellEntry( 47437 ), -- Demoralizing Shout
 				CreateSpellEntry( 64382 ), -- Shattering Throw
+				CreateSpellEntry( 58567 ), -- Sunder Armor
 			},
 			player = { 
 				CreateSpellEntry( 47440 ), -- Commanding Shout
@@ -700,7 +713,7 @@ do
 				result.icon = icon;
 				
 				local stacks = result:CreateFontString( nil, "OVERLAY", nil );
-				stacks:SetFont( [=[Interface\Addons\Tukui\media\Russel Square LT.ttf]=], 12, "OUTLINE" );
+				stacks:SetFont( unpack( STACKS_FONT ) );
 				stacks:SetShadowColor( 0, 0, 0 );
 				stacks:SetShadowOffset( 1.25, -1.25 );
 				stacks:SetJustifyH( "RIGHT" );
@@ -736,7 +749,7 @@ do
 			end
 						
 			local name = bar:CreateFontString( nil, "OVERLAY", nil );
-			name:SetFont( [=[Interface\Addons\Tukui\media\Russel Square LT.ttf]=], 12, "OUTLINE" );
+			name:SetFont( unpack( MASTER_FONT ) );
 			name:SetJustifyH( "LEFT" );
 			name:SetShadowColor( 0, 0, 0 );
 			name:SetShadowOffset( 1.25, -1.25 );
@@ -745,7 +758,7 @@ do
 			result.name = name;
 			
 			local time = bar:CreateFontString( nil, "OVERLAY", nil );
-			time:SetFont( [=[Interface\Addons\Tukui\media\Russel Square LT.ttf]=], 12, "OUTLINE" );
+			time:SetFont( unpack( MASTER_FONT ) );
 			time:SetJustifyH( "RIGHT" );
 			time:SetShadowColor( 0, 0, 0 );
 			time:SetShadowOffset( 1.25, -1.25 );
