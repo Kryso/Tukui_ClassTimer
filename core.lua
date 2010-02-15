@@ -15,7 +15,10 @@ end
 -- Configuration starts here:
 
 -- Bar height
-local BAR_HEIGHT = 23;
+local BAR_HEIGHT = 20;
+
+-- Distance between bars
+local BAR_SPACING = 1;
 
 --[[ Layouts
 	1 - both player and target auras in one frame right above player frame
@@ -27,19 +30,13 @@ local LAYOUT = 3;
 -- Background alpha (range from 0 to 1)
 local BACKGROUND_ALPHA = 0.75;
 
---[[ Determines what border should icons have
-	1 - tukuis buttonTex
-	2 - simple square border
-]]--
-local ICON_LAYOUT = 2;
-
 --[[ Show icons outside of frame (flags - that means you can combine them - for example 3 means it will be outside the right edge)
 	0 - left
 	1 - right
 	2 - outside
 	4 - hide
 ]]--
-local ICON_POSITION = 2;
+local ICON_POSITION = 0;
 
 -- Icon overlay color
 local ICON_COLOR = CreateColor( 120, 120, 120, 1 );
@@ -532,9 +529,9 @@ do
 	CreateFramedTexture = function( parent )
 		local result = parent:CreateTexture( nil, "BACKGROUND", nil );
 		local border = parent:CreateTexture( nil, "ARTWORK", nil );
-		local background = parent:CreateTexture( nil, "ARTWORK", nil );
 		local texture = parent:CreateTexture( nil, "OVERLAY", nil );
 		
+		local background = parent:CreateTexture( nil, "ARTWORK", nil );
 		result:SetTexture( 0.1, 0.1, 0.1, 1 );
 		border:SetTexture( 0.5, 0.5, 0.5, 1 );
 		background:SetTexture( 0.1, 0.1, 0.1, 1 );
@@ -547,11 +544,11 @@ do
 
 		texture:SetPoint( "TOPLEFT", background, "TOPLEFT", 1, -1 );
 		texture:SetPoint( "BOTTOMRIGHT", background, "BOTTOMRIGHT", -1, 1 );
-		
+			
 		result.border = border;
 		result.background = background;
 		result.texture = texture;
-		
+			
 		result.SetBorderColor = SetBorderColor;
 		
 		result.SetTexture = SetTexture;
@@ -644,10 +641,18 @@ do
 		end
 		
 		local SetStacks = function( self, stacks )
-			if ( stacks ~= nil and stacks > 0 ) then
-				self.stacks:SetText( stacks );
-			else
-				self.stacks:SetText( "" );
+			if ( not self.stacks ) then
+				if ( stacks ~= nil and stacks > 0 ) then
+					local name = self.name;
+					
+					name:SetText( tostring( stacks ) .. "  " .. name:GetText() );
+				end
+			else			
+				if ( stacks ~= nil and stacks > 0 ) then
+					self.stacks:SetText( stacks );
+				else
+					self.stacks:SetText( "" );
+				end
 			end
 		end
 		
@@ -667,21 +672,9 @@ do
 			local result = CreateFrame( "Frame", nil, parent, nil );
 
 			if ( bit.band( ICON_POSITION, 4 ) == 0 ) then		
-				local icon;
-				if ( ICON_LAYOUT == 1 ) then
-					icon = result:CreateTexture( nil, "ARTWORK", nil );		
-					
-					local iconOverlay = result:CreateTexture( nil, "OVERLAY", nil );
-					iconOverlay:SetPoint( "TOPLEFT", icon, "TOPLEFT", -1.5, 1 );
-					iconOverlay:SetPoint( "BOTTOMRIGHT", icon, "BOTTOMRIGHT", 1, -1 );
-					iconOverlay:SetTexture( [=[Interface\Addons\Tukui\media\buttonTex]=] );
-					iconOverlay:SetVertexColor( unpack( ICON_COLOR ) );
-					icon.overlay = iconOverlay;	
-				else
-					icon = CreateFramedTexture( result, "ARTWORK" );
-					icon:SetTexCoord( 0.15, 0.85, 0.15, 0.85 );
-					icon:SetBorderColor( unpack( ICON_COLOR ) );
-				end
+				local icon = CreateFramedTexture( result, "ARTWORK" );
+				icon:SetTexCoord( 0.15, 0.85, 0.15, 0.85 );
+				icon:SetBorderColor( unpack( ICON_COLOR ) );
 				
 				local iconAnchor1;
 				local iconAnchor2;
@@ -695,22 +688,23 @@ do
 					iconAnchor2 = "TOPLEFT";
 					iconOffset = -1;
 				end			
+				
 				if ( bit.band( ICON_POSITION, 2 ) == 2 ) then
-					icon:SetPoint( iconAnchor1, result, iconAnchor2, iconOffset * 6, 0 );
+					icon:SetPoint( iconAnchor1, result, iconAnchor2, iconOffset * 6, 1 );
 				else
-					icon:SetPoint( iconAnchor1, result, iconAnchor2, iconOffset * -BAR_HEIGHT, 0 );
+					icon:SetPoint( iconAnchor1, result, iconAnchor2, iconOffset * ( -BAR_HEIGHT - 1 ), 1 );
 				end			
-				icon:SetWidth( BAR_HEIGHT );
-				icon:SetHeight( BAR_HEIGHT );	
+				icon:SetWidth( BAR_HEIGHT + 2 );
+				icon:SetHeight( BAR_HEIGHT + 2 );	
 
 				result.icon = icon;
 				
 				local stacks = result:CreateFontString( nil, "OVERLAY", nil );
 				stacks:SetFont( [=[Interface\Addons\Tukui\media\Russel Square LT.ttf]=], 12, "OUTLINE" );
-				stacks:SetJustifyH( "RIGHT" );
-				stacks:SetJustifyV( "BOTTOM" );
 				stacks:SetShadowColor( 0, 0, 0 );
 				stacks:SetShadowOffset( 1.25, -1.25 );
+				stacks:SetJustifyH( "RIGHT" );
+				stacks:SetJustifyV( "BOTTOM" );
 				stacks:SetPoint( "TOPLEFT", icon, "TOPLEFT", 0, 0 );
 				stacks:SetPoint( "BOTTOMRIGHT", icon, "BOTTOMRIGHT", 0, 3 );
 				result.stacks = stacks;
@@ -719,15 +713,15 @@ do
 			local bar = CreateFrame( "StatusBar", nil, result, nil );
 			bar:SetStatusBarTexture( [=[Interface\Addons\Tukui\media\normTex]=] );
 			if ( bit.band( ICON_POSITION, 2 ) == 2 or bit.band( ICON_POSITION, 4 ) == 4 ) then
-				bar:SetPoint( "TOPLEFT", result, "TOPLEFT", 0, -1 );
+				bar:SetPoint( "TOPLEFT", result, "TOPLEFT", 0, 0 );
 				bar:SetPoint( "BOTTOMRIGHT", result, "BOTTOMRIGHT", 0, 0 );
 			else
 				if ( bit.band( ICON_POSITION, 1 ) == 1 ) then
-					bar:SetPoint( "TOPLEFT", result, "TOPLEFT", 0, -1 );
-					bar:SetPoint( "BOTTOMRIGHT", result.icon, "BOTTOMLEFT", -1, 0 );
+					bar:SetPoint( "TOPLEFT", result, "TOPLEFT", 0, 0 );
+					bar:SetPoint( "BOTTOMRIGHT", result, "BOTTOMRIGHT", -BAR_HEIGHT - 1, 0 );
 				else
-					bar:SetPoint( "TOPLEFT", result.icon, "TOPRIGHT", 1, -1 );
-					bar:SetPoint( "BOTTOMRIGHT", result, "BOTTOMRIGHT", 0, 0 );
+					bar:SetPoint( "TOPLEFT", result, "TOPLEFT", BAR_HEIGHT + 1, 0 );
+					bar:SetPoint( "BOTTOMRIGHT", result, "BOTTOMRIGHT", 0, 0 );					
 				end	
 			end
 			result.bar = bar;
@@ -740,7 +734,7 @@ do
 				spark:Show();
 				result.spark = spark;
 			end
-			
+						
 			local name = bar:CreateFontString( nil, "OVERLAY", nil );
 			name:SetFont( [=[Interface\Addons\Tukui\media\Russel Square LT.ttf]=], 12, "OUTLINE" );
 			name:SetJustifyH( "LEFT" );
@@ -780,8 +774,8 @@ do
 				line:SetPoint( "BOTTOMRIGHT", self, "BOTTOMRIGHT", 0, 0 );
 			else
 				local anchor = self.lines[ index - 1 ];
-				line:SetPoint( "TOPLEFT", anchor, "TOPLEFT", 0, BAR_HEIGHT );
-				line:SetPoint( "BOTTOMRIGHT", anchor, "TOPRIGHT", 0, 0 );
+				line:SetPoint( "TOPLEFT", anchor, "TOPLEFT", 0, BAR_HEIGHT + BAR_SPACING );
+				line:SetPoint( "BOTTOMRIGHT", anchor, "TOPRIGHT", 0, BAR_SPACING );
 			end
 			tinsert( self.lines, index, line );
 		end	
@@ -848,7 +842,7 @@ do
 		end
 		
 		if ( count > 0 ) then
-			self:SetHeight( BAR_HEIGHT * count - 1 );
+			self:SetHeight( ( BAR_HEIGHT + BAR_SPACING ) * count - BAR_SPACING );
 			self:Show();
 		else
 			self:Hide();
