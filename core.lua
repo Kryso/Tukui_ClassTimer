@@ -14,7 +14,7 @@ end
 
 -- Configuration starts here:
 
--- Looks ugly when lower than 23
+-- Bar height
 local BAR_HEIGHT = 23;
 
 --[[ Layouts
@@ -27,6 +27,12 @@ local LAYOUT = 3;
 -- Background alpha (range from 0 to 1)
 local BACKGROUND_ALPHA = 0.75;
 
+--[[ Determines what border should icons have
+	1 - tukuis buttonTex
+	2 - simple square border
+]]--
+local ICON_LAYOUT = 2;
+
 --[[ Show icons outside of frame (flags - that means you can combine them - for example 3 means it will be outside the right edge)
 	0 - left
 	1 - right
@@ -36,7 +42,7 @@ local BACKGROUND_ALPHA = 0.75;
 local ICON_POSITION = 2;
 
 -- Icon overlay color
-local ICON_COLOR = CreateColor( 100, 100, 100, 1 );
+local ICON_COLOR = CreateColor( 120, 120, 120, 1 );
 
 -- Show spark
 local SPARK = false;
@@ -56,17 +62,35 @@ local PERMANENT_AURA_VALUE = 1;
 ]]--
 local PLAYER_BAR_COLOR = CreateColor( 70, 70, 150, 1 );
 
+--[[ Player debuff color
+	red, green, blue - range from 0 to 255
+	alpha - range from 0 to 1
+]]--
+local PLAYER_DEBUFF_COLOR = nil;
+
 --[[ Target bar color
 	red, green, blue - range from 0 to 255
 	alpha - range from 0 to 1
 ]]--
-local TARGET_BAR_COLOR = CreateColor( 150, 70, 70, 1 );
+local TARGET_BAR_COLOR = CreateColor( 70, 150, 70, 1 );
+
+--[[ Target debuff color
+	red, green, blue - range from 0 to 255
+	alpha - range from 0 to 1
+]]--
+local TARGET_DEBUFF_COLOR = CreateColor( 150, 70, 70, 1 );
 
 --[[ Trinket bar color
 	red, green, blue - range from 0 to 255
 	alpha - range from 0 to 1
 ]]--
-local TRINKET_BAR_COLOR = CreateColor( 70, 150, 70, 1 );
+local TRINKET_BAR_COLOR = CreateColor( 150, 150, 70, 1 );
+
+--[[ Sort direction
+	false - ascending
+	true - descending
+]]--
+local SORT_DIRECTION = true;
 
 -- Trinket filter - mostly for trinket procs, delete or wrap into comment block --[[  ]] if you dont want to track those
 local TRINKET_FILTER = {
@@ -225,7 +249,7 @@ local CLASS_FILTERS = {
 		PRIEST = { 
 			target = { 
 				CreateSpellEntry( 48066 ), -- Power Word: Shield
-				CreateSpellEntry( 6788, true, CreateColor( 150, 50, 50, 1 ), 1 ), -- Weakened Soul
+				CreateSpellEntry( 6788, true, nil, 1 ), -- Weakened Soul
 				CreateSpellEntry( 48068 ), -- Renew
 				CreateSpellEntry( 48111 ), -- Prayer of Mending
 				CreateSpellEntry( 552 ), -- Abolish Disease
@@ -262,7 +286,8 @@ local CLASS_FILTERS = {
 			player = { 
 				CreateSpellEntry( 57993 ), -- Envenom
 				CreateSpellEntry( 8647 ), -- Expose Armor
-				CreateSpellEntry( 6774 ), -- Slice and Dice				
+				CreateSpellEntry( 6774 ), -- Slice and Dice			
+				CreateSpellEntry( 58155 ), -- Hunger for Blood
 			},
 			procs = {
 				
@@ -342,16 +367,17 @@ do
 		local unitIsFriend = UnitIsFriend( "player", unit );
 	
 		for _, auraType in ipairs( { "HELPFUL", "HARMFUL" } ) do
+			local isDebuff = auraType == "HARMFUL";
+		
 			for index = 1, 40 do
 				local name, rank, texture, stacks, debuffType, duration, expirationTime, caster, isStealable, shouldConsolidate, spellId = UnitAura( unit, index, auraType );		
 				if ( name == nil ) then
 					break;
 				end							
 				
-				--local filterInfo = ( ( self.unit ~= "target" or unit ~= "player" or not UnitIsUnit( "player", "target" ) ) and CheckFilter( self, spellId, caster, self.globalFilter ) )or CheckFilter( self, spellId, caster, filter );
 				local filterInfo = CheckFilter( self, spellId, caster, filter );
 				if ( filterInfo and ( filterInfo.unitType ~= 1 or unitIsFriend ) and ( filterInfo.unitType ~= 2 or not unitIsFriend ) ) then 					
-					tinsert( result, { name = name, texture = texture, duration = duration, expirationTime = expirationTime, stacks = stacks, unit = unit, color = filterInfo.color } );
+					tinsert( result, { name = name, texture = texture, duration = duration, expirationTime = expirationTime, stacks = stacks, unit = unit, color = filterInfo.color, isDebuff = isDebuff, defaultColor = filterInfo.defaultColor, debuffColor = filterInfo.debuffColor } );
 					count = count + 1;
 				end
 			end
@@ -414,23 +440,29 @@ do
 		return self.count;
 	end
 	
-	local AddFilter = function( self, filter, defaultColor )
+	local AddFilter = function( self, filter, defaultColor, debuffColor )
 		if ( filter == nil ) then return; end
 	
 		for _, v in pairs( filter ) do
-			if ( defaultColor ~= nil and v.color == nil ) then
-				v.color = defaultColor;
+			if ( defaultColor ~= nil ) then
+				v.defaultColor = defaultColor;
+			end
+			if ( debuffColor ~= nil ) then
+				v.debuffColor = debuffColor;
 			end
 			table.insert( self.filter, v );
 		end
 	end
 	
-	local AddPlayerFilter = function( self, filter, defaultColor )
+	local AddPlayerFilter = function( self, filter, defaultColor, debuffColor )
 		if ( filter == nil ) then return; end
 	
 		for _, v in pairs( filter ) do
-			if ( defaultColor ~= nil and v.color == nil ) then
-				v.color = defaultColor;
+			if ( defaultColor ~= nil ) then
+				v.defaultColor = defaultColor;
+			end
+			if ( debuffColor ~= nil ) then
+				v.debuffColor = debuffColor;
 			end
 			table.insert( self.playerFilter, v );
 		end
@@ -469,10 +501,64 @@ do
 		result.filter = { };
 		result.playerFilter = { };
 		
-		result:SetSortDirection( true );
-		result:Update();
-		result:Sort();
+		return result;
+	end
+end
+
+local CreateFramedTexture;
+do
+	-- public
+	local SetTexture = function( self, ... )
+		return self.texture:SetTexture( ... );
+	end
+	
+	local GetTexture = function( self )
+		return self.texture:GetTexture();
+	end
+	
+	local GetTexCoord = function( self )
+		return self.texture:GetTexCoord();
+	end
+	
+	local SetTexCoord = function( self, ... )
+		return self.texture:SetTexCoord( ... );
+	end
+	
+	local SetBorderColor = function( self, ... )
+		return self.border:SetVertexColor( ... );
+	end
+	
+	-- constructor
+	CreateFramedTexture = function( parent )
+		local result = parent:CreateTexture( nil, "BACKGROUND", nil );
+		local border = parent:CreateTexture( nil, "ARTWORK", nil );
+		local background = parent:CreateTexture( nil, "ARTWORK", nil );
+		local texture = parent:CreateTexture( nil, "OVERLAY", nil );
 		
+		result:SetTexture( 0.1, 0.1, 0.1, 1 );
+		border:SetTexture( 0.5, 0.5, 0.5, 1 );
+		background:SetTexture( 0.1, 0.1, 0.1, 1 );
+			
+		border:SetPoint( "TOPLEFT", result, "TOPLEFT", 1, -1 );
+		border:SetPoint( "BOTTOMRIGHT", result, "BOTTOMRIGHT", -1, 1 );
+		
+		background:SetPoint( "TOPLEFT", border, "TOPLEFT", 1, -1 );
+		background:SetPoint( "BOTTOMRIGHT", border, "BOTTOMRIGHT", -1, 1 );
+
+		texture:SetPoint( "TOPLEFT", background, "TOPLEFT", 1, -1 );
+		texture:SetPoint( "BOTTOMRIGHT", background, "BOTTOMRIGHT", -1, 1 );
+		
+		result.border = border;
+		result.background = background;
+		result.texture = texture;
+		
+		result.SetBorderColor = SetBorderColor;
+		
+		result.SetTexture = SetTexture;
+		result.GetTexture = GetTexture;
+		result.SetTexCoord = SetTexCoord;
+		result.GetTexCoord = GetTexCoord;
+			
 		return result;
 	end
 end
@@ -580,9 +666,23 @@ do
 		CreateAuraBar = function( parent )
 			local result = CreateFrame( "Frame", nil, parent, nil );
 
-			local icon = result:CreateTexture( nil, "ARTWORK", nil );		
-
-			if ( bit.band( ICON_POSITION, 4 ) == 0 ) then
+			if ( bit.band( ICON_POSITION, 4 ) == 0 ) then		
+				local icon;
+				if ( ICON_LAYOUT == 1 ) then
+					icon = result:CreateTexture( nil, "ARTWORK", nil );		
+					
+					local iconOverlay = result:CreateTexture( nil, "OVERLAY", nil );
+					iconOverlay:SetPoint( "TOPLEFT", icon, "TOPLEFT", -1.5, 1 );
+					iconOverlay:SetPoint( "BOTTOMRIGHT", icon, "BOTTOMRIGHT", 1, -1 );
+					iconOverlay:SetTexture( [=[Interface\Addons\Tukui\media\buttonTex]=] );
+					iconOverlay:SetVertexColor( unpack( ICON_COLOR ) );
+					icon.overlay = iconOverlay;	
+				else
+					icon = CreateFramedTexture( result, "ARTWORK" );
+					icon:SetTexCoord( 0.15, 0.85, 0.15, 0.85 );
+					icon:SetBorderColor( unpack( ICON_COLOR ) );
+				end
+				
 				local iconAnchor1;
 				local iconAnchor2;
 				local iconOffset;
@@ -601,15 +701,19 @@ do
 					icon:SetPoint( iconAnchor1, result, iconAnchor2, iconOffset * -BAR_HEIGHT, 0 );
 				end			
 				icon:SetWidth( BAR_HEIGHT );
-				icon:SetHeight( BAR_HEIGHT );			
+				icon:SetHeight( BAR_HEIGHT );	
+
 				result.icon = icon;
-			
-				local iconOverlay = result:CreateTexture( nil, "OVERLAY", nil );
-				iconOverlay:SetPoint( "TOPLEFT", icon, "TOPLEFT", -1.5, 1 );
-				iconOverlay:SetPoint( "BOTTOMRIGHT", icon, "BOTTOMRIGHT", 1, -1 );
-				iconOverlay:SetTexture( [=[Interface\Addons\Tukui\media\buttonTex]=] );
-				iconOverlay:SetVertexColor( unpack( ICON_COLOR ) );
-				result.icon.overlay = iconOverlay;		
+				
+				local stacks = result:CreateFontString( nil, "OVERLAY", nil );
+				stacks:SetFont( [=[Interface\Addons\Tukui\media\Russel Square LT.ttf]=], 12, "OUTLINE" );
+				stacks:SetJustifyH( "RIGHT" );
+				stacks:SetJustifyV( "BOTTOM" );
+				stacks:SetShadowColor( 0, 0, 0 );
+				stacks:SetShadowOffset( 1.25, -1.25 );
+				stacks:SetPoint( "TOPLEFT", icon, "TOPLEFT", 0, 0 );
+				stacks:SetPoint( "BOTTOMRIGHT", icon, "BOTTOMRIGHT", 0, 3 );
+				result.stacks = stacks;
 			end
 			
 			local bar = CreateFrame( "StatusBar", nil, result, nil );
@@ -655,16 +759,6 @@ do
 			time:SetPoint( "BOTTOMRIGHT", bar, "BOTTOMRIGHT", -TEXT_MARGIN, 2 );
 			result.time = time;
 			
-			local stacks = result:CreateFontString( nil, "OVERLAY", nil );
-			stacks:SetFont( [=[Interface\Addons\Tukui\media\Russel Square LT.ttf]=], 12, "OUTLINE" );
-			stacks:SetJustifyH( "RIGHT" );
-			stacks:SetJustifyV( "BOTTOM" );
-			stacks:SetShadowColor( 0, 0, 0 );
-			stacks:SetShadowOffset( 1.25, -1.25 );
-			stacks:SetPoint( "TOPLEFT", icon, "TOPLEFT", 0, 0 );
-			stacks:SetPoint( "BOTTOMRIGHT", icon, "BOTTOMRIGHT", 0, 3 );
-			result.stacks = stacks;
-			
 			result.SetIcon = SetIcon;
 			result.SetTime = SetTime;
 			result.SetName = SetName;
@@ -695,6 +789,10 @@ do
 		line:SetAuraInfo( auraInfo );
 		if ( auraInfo.color ) then
 			line:SetColor( auraInfo.color );
+		elseif ( auraInfo.debuffColor and auraInfo.isDebuff ) then
+			line:SetColor( auraInfo.debuffColor );
+		elseif ( auraInfo.defaultColor ) then
+			line:SetColor( auraInfo.defaultColor );
 		end
 		
 		line:Show();
@@ -815,11 +913,13 @@ local classFilter = CLASS_FILTERS[ playerClass ];
 if ( LAYOUT == 1 ) then
 	local dataSource = CreateUnitAuraDataSource( "target" );
 
+	dataSource:SetSortDirection( SORT_DIRECTION );
+	
 	dataSource:AddPlayerFilter( TRINKET_FILTER, TRINKET_BAR_COLOR );
 	
 	if ( classFilter ) then
-		dataSource:AddFilter( classFilter.target, TARGET_BAR_COLOR );
-		dataSource:AddPlayerFilter( classFilter.player, PLAYER_BAR_COLOR );
+		dataSource:AddFilter( classFilter.target, TARGET_BAR_COLOR, TARGET_DEBUFF_COLOR );
+		dataSource:AddPlayerFilter( classFilter.player, PLAYER_BAR_COLOR, PLAYER_DEBUFF_COLOR );
 		dataSource:AddPlayerFilter( classFilter.procs, TRINKET_BAR_COLOR );
 		dataSource:SetIncludePlayer( classFilter.player ~= nil );
 	end
@@ -836,12 +936,15 @@ elseif ( LAYOUT == 2 ) then
 	local targetDataSource = CreateUnitAuraDataSource( "target" );
 	local playerDataSource = CreateUnitAuraDataSource( "player" );
 
+	targetDataSource:SetSortDirection( SORT_DIRECTION );
+	playerDataSource:SetSortDirection( SORT_DIRECTION );
+	
 	playerDataSource:AddFilter( TRINKET_FILTER, TRINKET_BAR_COLOR );
 
 	if ( classFilter ) then
-		targetDataSource:AddFilter( classFilter.target, TARGET_BAR_COLOR );
+		targetDataSource:AddFilter( classFilter.target, TARGET_BAR_COLOR, TARGET_DEBUFF_COLOR );
+		playerDataSource:AddFilter( classFilter.player, PLAYER_BAR_COLOR, PLAYER_DEBUFF_COLOR );
 		playerDataSource:AddFilter( classFilter.procs, TRINKET_BAR_COLOR );
-		playerDataSource:AddFilter( classFilter.player, PLAYER_BAR_COLOR );
 	end
 
 	local yOffset = 6;
@@ -868,9 +971,13 @@ elseif ( LAYOUT == 3 ) then
 	local playerDataSource = CreateUnitAuraDataSource( "player" );
 	local trinketDataSource = CreateUnitAuraDataSource( "player" );
 	
+	targetDataSource:SetSortDirection( SORT_DIRECTION );
+	playerDataSource:SetSortDirection( SORT_DIRECTION );
+	trinketDataSource:SetSortDirection( SORT_DIRECTION );
+	
 	if ( classFilter ) then
-		targetDataSource:AddFilter( classFilter.target, TARGET_BAR_COLOR );		
-		playerDataSource:AddFilter( classFilter.player, PLAYER_BAR_COLOR );
+		targetDataSource:AddFilter( classFilter.target, TARGET_BAR_COLOR, TARGET_DEBUFF_COLOR );		
+		playerDataSource:AddFilter( classFilter.player, PLAYER_BAR_COLOR, PLAYER_DEBUFF_COLOR );
 		trinketDataSource:AddFilter( classFilter.procs, TRINKET_BAR_COLOR );
 	end
 	trinketDataSource:AddFilter( TRINKET_FILTER, TRINKET_BAR_COLOR );
