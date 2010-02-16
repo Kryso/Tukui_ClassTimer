@@ -365,6 +365,8 @@ local CLASS_FILTERS = {
 
 local CreateUnitAuraDataSource;
 do
+	local auraTypes = { "HELPFUL", "HARMFUL" };
+
 	-- private
 	local CheckFilter = function( self, id, caster, filter )
 		if ( filter == nil ) then return false; end
@@ -380,10 +382,10 @@ do
 	
 	local CheckUnit = function( self, unit, filter, result )
 		if ( not UnitExists( unit ) ) then return 0; end
-	
+
 		local unitIsFriend = UnitIsFriend( "player", unit );
-	
-		for _, auraType in ipairs( { "HELPFUL", "HARMFUL" } ) do
+
+		for _, auraType in ipairs( auraTypes ) do
 			local isDebuff = auraType == "HARMFUL";
 		
 			for index = 1, 40 do
@@ -401,30 +403,25 @@ do
 					filterInfo.stacks = stacks;
 					filterInfo.unit = unit;
 					filterInfo.isDebuff = isDebuff;
-				
-					--tinsert( result, { name = name, texture = texture, duration = duration, expirationTime = expirationTime, stacks = stacks, unit = unit, color = filterInfo.color, isDebuff = isDebuff, defaultColor = filterInfo.defaultColor, debuffColor = filterInfo.debuffColor, castSpellId = filterInfo.castSpellId } );
 					table.insert( result, filterInfo );
 				end
 			end
 		end
-		
-		return count;
 	end
 
 	-- public 
 	local Update = function( self )
 		local result = self.table;
-		
+
 		for index = 1, #result do
 			table.remove( result );
-		end
-		
+		end				
+
 		CheckUnit( self, self.unit, self.filter, result );
 		if ( self.includePlayer ) then
 			CheckUnit( self, "player", self.playerFilter, result );
 		end
 		
-		self.count = #result;
 		self.table = result;
 	end
 
@@ -465,12 +462,12 @@ do
 	end
 	
 	local Count = function( self )
-		return self.count;
+		return #self.table;
 	end
 	
 	local AddFilter = function( self, filter, defaultColor, debuffColor )
 		if ( filter == nil ) then return; end
-	
+		
 		for _, v in pairs( filter ) do
 			local clone = { };
 			
@@ -489,7 +486,7 @@ do
 	
 	local AddPlayerFilter = function( self, filter, defaultColor, debuffColor )
 		if ( filter == nil ) then return; end
-	
+
 		for _, v in pairs( filter ) do
 			local clone = { };
 			
@@ -539,7 +536,6 @@ do
 		result.filter = { };
 		result.playerFilter = { };
 		result.table = { };
-		result.count = 0;
 		
 		return result;
 	end
@@ -909,8 +905,8 @@ do
 		dataSource:Sort();
 		
 		local count = dataSource:Count();
-		
-		for index, auraInfo in pairs( self.dataSource:Get() ) do
+
+		for index, auraInfo in ipairs( dataSource:Get() ) do
 			SetAuraBar( self, index, auraInfo );
 		end
 		
