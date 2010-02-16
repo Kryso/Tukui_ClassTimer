@@ -274,6 +274,7 @@ local CLASS_FILTERS = {
 				CreateSpellEntry( 48160, false, nil, nil, 48160 ), -- Vampiric Touch
 				CreateSpellEntry( 48125 ), -- Shadow Word: Pain
 				CreateSpellEntry( 48300 ), -- Devouring Plague
+				CreateSpellEntry( 47788 ), -- Guardian Spirit
 			},
 			player = {
 				CreateSpellEntry( 10060 ), -- Power Infusion
@@ -380,22 +381,29 @@ do
 	local CheckUnit = function( self, unit, filter, result )
 		if ( not UnitExists( unit ) ) then return 0; end
 	
-		local count = 0;
 		local unitIsFriend = UnitIsFriend( "player", unit );
 	
 		for _, auraType in ipairs( { "HELPFUL", "HARMFUL" } ) do
 			local isDebuff = auraType == "HARMFUL";
 		
 			for index = 1, 40 do
-				local name, rank, texture, stacks, debuffType, duration, expirationTime, caster, isStealable, shouldConsolidate, spellId = UnitAura( unit, index, auraType );		
+				local name, _, texture, stacks, _, duration, expirationTime, caster, _, _, spellId = UnitAura( unit, index, auraType );		
 				if ( name == nil ) then
 					break;
 				end							
 				
 				local filterInfo = CheckFilter( self, spellId, caster, filter );
 				if ( filterInfo and ( filterInfo.unitType ~= 1 or unitIsFriend ) and ( filterInfo.unitType ~= 2 or not unitIsFriend ) ) then 					
-					tinsert( result, { name = name, texture = texture, duration = duration, expirationTime = expirationTime, stacks = stacks, unit = unit, color = filterInfo.color, isDebuff = isDebuff, defaultColor = filterInfo.defaultColor, debuffColor = filterInfo.debuffColor, castSpellId = filterInfo.castSpellId } );
-					count = count + 1;
+					filterInfo.name = name;
+					filterInfo.texture = texture;
+					filterInfo.duration = duration;
+					filterInfo.expirationTime = expirationTime;
+					filterInfo.stacks = stacks;
+					filterInfo.unit = unit;
+					filterInfo.isDebuff = isDebuff;
+				
+					--tinsert( result, { name = name, texture = texture, duration = duration, expirationTime = expirationTime, stacks = stacks, unit = unit, color = filterInfo.color, isDebuff = isDebuff, defaultColor = filterInfo.defaultColor, debuffColor = filterInfo.debuffColor, castSpellId = filterInfo.castSpellId } );
+					table.insert( result, filterInfo );
 				end
 			end
 		end
@@ -405,16 +413,19 @@ do
 
 	-- public 
 	local Update = function( self )
-		result = { };
-		count = 0;
+		local result = self.table;
 		
-		count = count + CheckUnit( self, self.unit, self.filter, result );
-		if ( self.includePlayer ) then
-			count = count + CheckUnit( self, "player", self.playerFilter, result );
+		for index = 1, #result do
+			table.remove( result );
 		end
 		
-		self.count = count;
-		self.table = result
+		CheckUnit( self, self.unit, self.filter, result );
+		if ( self.includePlayer ) then
+			CheckUnit( self, "player", self.playerFilter, result );
+		end
+		
+		self.count = #result;
+		self.table = result;
 	end
 
 	local SetSortDirection = function( self, descending )
@@ -461,13 +472,18 @@ do
 		if ( filter == nil ) then return; end
 	
 		for _, v in pairs( filter ) do
-			if ( defaultColor ~= nil ) then
-				v.defaultColor = defaultColor;
-			end
-			if ( debuffColor ~= nil ) then
-				v.debuffColor = debuffColor;
-			end
-			table.insert( self.filter, v );
+			local clone = { };
+			
+			clone.id = v.id;
+			clone.castByAnyone = v.castByAnyone;
+			clone.color = v.color;
+			clone.unitType = v.unitType;
+			clone.castSpellId = v.castSpellId;
+			
+			clone.defaultColor = defaultColor;
+			clone.debuffColor = debuffColor;
+			
+			table.insert( self.filter, clone );
 		end
 	end
 	
@@ -475,13 +491,18 @@ do
 		if ( filter == nil ) then return; end
 	
 		for _, v in pairs( filter ) do
-			if ( defaultColor ~= nil ) then
-				v.defaultColor = defaultColor;
-			end
-			if ( debuffColor ~= nil ) then
-				v.debuffColor = debuffColor;
-			end
-			table.insert( self.playerFilter, v );
+			local clone = { };
+			
+			clone.id = v.id;
+			clone.castByAnyone = v.castByAnyone;
+			clone.color = v.color;
+			clone.unitType = v.unitType;
+			clone.castSpellId = v.castSpellId;
+			
+			clone.defaultColor = defaultColor;
+			clone.debuffColor = debuffColor;
+			
+			table.insert( self.playerFilter, clone );
 		end
 	end
 	
@@ -517,6 +538,8 @@ do
 		result.includePlayer = false;
 		result.filter = { };
 		result.playerFilter = { };
+		result.table = { };
+		result.count = 0;
 		
 		return result;
 	end
