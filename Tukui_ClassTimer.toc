@@ -1,5 +1,6 @@
 ## Interface: 30300
-## Title: Tukui Class Timer
+## Title: |cffC495DDTukui Class Timer|r
 ## Author: Kryso
+## RequiredDeps: Tukui
 
 core.lua

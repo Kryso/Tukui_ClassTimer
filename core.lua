@@ -1,3 +1,5 @@
+if ( TukuiUF ~= true ) then return; end
+
 --[[ Configuration functions - DO NOT TOUCH
 	id - spell id
 	castByAnyone - show if aura wasn't created by player
@@ -195,19 +197,53 @@ local CLASS_FILTERS = {
 				CreateSpellEntry( 53251 ), -- Wild Growth
 				CreateSpellEntry( 48441 ), -- Rejuvenation
 				CreateSpellEntry( 48443, false, nil, nil, 48443 ), -- Regrowth
+				CreateSpellEntry( 48451 ), -- Lifebloom
 				CreateSpellEntry( 48468 ), -- Insect Swarm
 				CreateSpellEntry( 48463 ), -- Moonfire
-				CreateSpellEntry( 48451 ), -- Lifebloom
+				CreateSpellEntry( 53308 ), -- Entangling Roots
+				CreateSpellEntry( 33786 ), -- Cyclone
+				CreateSpellEntry( 18658 ), -- Hibernate
+				CreateSpellEntry( 26995 ), -- Soothe Animal
+				CreateSpellEntry( 50259 ), -- Feral Charge (Cat) - daze
+				CreateSpellEntry( 45334 ), -- Feral Charge (Bear) - immobilize
+				CreateSpellEntry( 58181 ), -- Infected Wounds
+				CreateSpellEntry( 6795 ), -- Growl
+				CreateSpellEntry( 5209 ), -- Challenging Roar
+				CreateSpellEntry( 48560 ), -- Demoralizing Roar
+				CreateSpellEntry( 48568 ), -- Lacerate
+				CreateSpellEntry( 8983 ), -- Bash   
+				CreateSpellEntry( 49802 ), -- Maim
+				CreateSpellEntry( 48574 ), -- Rake
+				CreateSpellEntry( 49800 ), -- Rip
+				CreateSpellEntry( 48564, true ), -- Mangle (Bear)
+				CreateSpellEntry( 48566, true ), -- Mangle (Cat)
+				CreateSpellEntry( 49804 ), -- Pounce bleed
+				CreateSpellEntry( 49803 ), -- Pounce stun
+				CreateSpellEntry( 16857, true ), -- Faerie Fire (Feral)
+				CreateSpellEntry( 770, true ), -- Farie Fire
 			},
 			player = { 
 				CreateSpellEntry( 53201 ), -- Starfall
 				CreateSpellEntry( 29166 ), -- Innervate
 				CreateSpellEntry( 22812 ), -- Barkskin
+				CreateSpellEntry( 5215 ), -- Prowl 
+				CreateSpellEntry( 53312 ), -- Nature's Grasp
+				CreateSpellEntry( 5229 ), -- Enrage
+				CreateSpellEntry( 52610 ), -- Savage Roar
+				CreateSpellEntry( 50213 ), -- Tiger's Fury
+				CreateSpellEntry( 33357 ), -- Dash
+				CreateSpellEntry( 22842 ), -- Frenzied Regeneration
+				CreateSpellEntry( 50334 ), -- Berserk
+				CreateSpellEntry( 61336 ), -- Survival Instincts
 			},
 			procs = {
 				CreateSpellEntry( 16870 ), -- Clearcasting			
 				CreateSpellEntry( 48518 ), -- Eclipse starfire
 				CreateSpellEntry( 48517 ), -- Eclipse wrath
+				CreateSpellEntry( 69369 ), -- Predator's Swiftness
+				CreateSpellEntry( 67354 ), -- Idol of Mutilation (Bear)
+				CreateSpellEntry( 67355 ), -- Idol of Mutilation (Cat)
+				CreateSpellEntry( 71175 ), -- Idol of the Crying Moon
 			}
 		},
 		HUNTER = { 
@@ -265,7 +301,7 @@ local CLASS_FILTERS = {
 				CreateSpellEntry( 25771 ), -- Debuff: Forbearance
 			},
 			procs = {
-				CreateSpellEntry( 53488 ), -- The Art of War
+				CreateSpellEntry( 59578 ), -- The Art of War
 				CreateSpellEntry( 71187 ), -- Libram of Three Truths			
 			},
 		},
@@ -701,13 +737,13 @@ do
 		
 		local SetStacks = function( self, stacks )
 			if ( not self.stacks ) then
-				if ( stacks ~= nil and stacks > 0 ) then
+				if ( stacks ~= nil and stacks > 1 ) then
 					local name = self.name;
 					
 					name:SetText( tostring( stacks ) .. "  " .. name:GetText() );
 				end
 			else			
-				if ( stacks ~= nil and stacks > 0 ) then
+				if ( stacks ~= nil and stacks > 1 ) then
 					self.stacks:SetText( stacks );
 				else
 					self.stacks:SetText( "" );
