@@ -128,7 +128,7 @@ local TRINKET_FILTER = {
 		CreateSpellEntry( 71401 ), CreateSpellEntry( 71541 ), -- Icy Rage (Whispering Fanged Skull)
 		CreateSpellEntry( 71396 ), -- Herkuml War Token
 		CreateSpellEntry( 72412 ), -- Frostforged Champion (Ashen Band of Unmatched/Endless Might/Vengeance)
-
+	
 		CreateSpellEntry( 59626 ), -- Black Magic
 		CreateSpellEntry( 54758 ), -- Hyperspeed Acceleration (Hyperspeed Accelerators)
 		CreateSpellEntry( 55637 ), -- Lightweave
@@ -136,6 +136,7 @@ local TRINKET_FILTER = {
 		CreateSpellEntry( 2825, true ), CreateSpellEntry( 32182, true ), -- Bloodlust/Heroism
 		CreateSpellEntry( 26297 ), -- Berserking (troll racial)
 		CreateSpellEntry( 33702 ), CreateSpellEntry( 33697 ), CreateSpellEntry( 20572 ), -- Blood Fury (orc racial)
+		CreateSpellEntry( 57933 ), -- Tricks of Trade (15% dmg buff)
 	};
 	
 --[[ Class specific filters
@@ -187,6 +188,8 @@ local CLASS_FILTERS = {
 				CreateSpellEntry( 57623 ), -- Horn of Winter
 			},
 			procs = {
+				CreateSpellEntry( 59052 ), -- Freezing Fog
+				CreateSpellEntry( 51124 ), -- Killing Machine  
 				CreateSpellEntry( 49016 ), -- Hysteria
 				CreateSpellEntry( 53365 ), -- Unholy Strength	
 				CreateSpellEntry( 71227 ), -- Sigil of the Hanged Man				
@@ -348,6 +351,7 @@ local CLASS_FILTERS = {
 				CreateSpellEntry( 57993 ), -- Envenom
 				CreateSpellEntry( 6774 ), -- Slice and Dice			
 				CreateSpellEntry( 63848 ), -- Hunger for Blood
+				CreateSpellEntry( 57934 ), -- Tricks of Trade
 			},
 			procs = {
 				
@@ -369,17 +373,27 @@ local CLASS_FILTERS = {
 			},
 		},
 		WARLOCK = { 
-			target = { 
+			target = {
+				CreateSpellEntry( 59164, false, nil, nil, 59164 ), -- Haunt
+				CreateSpellEntry( 32391 ), -- Shadow Embrace 
+				CreateSpellEntry( 47813 ), -- Corruption
+				CreateSpellEntry( 47843, false, nil, nil, 47843 ), -- Unstable Affliction
+				CreateSpellEntry( 47867 ), -- Curse of Doom
+				CreateSpellEntry( 47864 ), -- Curse of Agony
+				CreateSpellEntry( 47865 ), -- Curse of the Elements 
 				CreateSpellEntry( 17962 ), -- Conflagration
 				CreateSpellEntry( 47811, false, nil, nil, 47811 ), -- Immolate
-				CreateSpellEntry( 47867 ), -- Curse of Doom
-				CreateSpellEntry( 47836 ), -- Seed of Corruption
+				CreateSpellEntry( 47836, false, nil, nil, 47836 ), -- Seed of Corruption
 			},
 			player = {            
 
 			},
 			procs = {
-				CreateSpellEntry( 54277 ), -- Backdraft				
+				CreateSpellEntry( 54277 ), -- Backdraft
+				CreateSpellEntry( 64371 ), -- Eradication
+				CreateSpellEntry( 71165 ), -- Molten Core
+				CreateSpellEntry( 63167 ), -- Decimation
+				CreateSpellEntry( 63321 ), -- Life Tap Glyph            
 			},
 		},
 		WARRIOR = { 
