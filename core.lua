@@ -104,6 +104,9 @@ local TRINKET_BAR_COLOR = CreateColor( 150, 150, 70, 1 );
 ]]--
 local SORT_DIRECTION = true;
 
+-- Timer tenths threshold - range from 1 to 60
+local TENTHS_TRESHOLD = 60
+
 -- Trinket filter - mostly for trinket procs, delete or wrap into comment block --[[  ]] if you dont want to track those
 local TRINKET_FILTER = {
 		CreateSpellEntry( 67671 ), -- Fury(Banner of Victory)
@@ -283,7 +286,8 @@ local CLASS_FILTERS = {
 			},
 			procs = {
 				CreateSpellEntry( 44544 ), -- Fingers of Frost	
-				CreateSpellEntry( 44401 ), -- Missile Barrage Proc				
+				CreateSpellEntry( 44401 ), -- Missile Barrage Proc		
+				CreateSpellEntry( 70753 ), -- Pushing the Limit (2pc t10)
 			},
 		},
 		PALADIN = { 
@@ -624,9 +628,9 @@ do
 	CreateFramedTexture = function( parent )
 		local result = parent:CreateTexture( nil, "BACKGROUND", nil );
 		local border = parent:CreateTexture( nil, "ARTWORK", nil );
-		local texture = parent:CreateTexture( nil, "OVERLAY", nil );
-		
 		local background = parent:CreateTexture( nil, "ARTWORK", nil );
+		local texture = parent:CreateTexture( nil, "OVERLAY", nil );		
+		
 		result:SetTexture( 0.1, 0.1, 0.1, 1 );
 		border:SetTexture( 0.5, 0.5, 0.5, 1 );
 		background:SetTexture( 0.1, 0.1, 0.1, 1 );
@@ -682,7 +686,7 @@ do
 					timeText = tostring( math.floor( remaining / 3600 ) ) .. "h";
 				elseif ( remaining >= 60 ) then
 					timeText = tostring( math.floor( remaining / 60 ) ) .. "m";
-				elseif ( remaining > 1 ) then
+				elseif ( remaining > TENTHS_TRESHOLD ) then
 					timeText = tostring( math.floor( remaining ) );
 				elseif ( remaining > 0 ) then
 					timeText = tostring( math.floor( remaining * 10 ) / 10 );
@@ -1120,17 +1124,17 @@ elseif ( LAYOUT == 3 ) then
 	end
 	playerFrame:Show();
 
-	local targetFrame = CreateAuraBarFrame( targetDataSource, oUF_Tukz_player );
-	targetFrame:SetHiddenHeight( -yOffset );
-	targetFrame:SetPoint( "BOTTOMLEFT", playerFrame, "TOPLEFT", 0, yOffset );
-	targetFrame:SetPoint( "BOTTOMRIGHT", playerFrame, "TOPRIGHT", 0, yOffset );
-	targetFrame:Show();
-	
 	local trinketFrame = CreateAuraBarFrame( trinketDataSource, oUF_Tukz_player );
 	trinketFrame:SetHiddenHeight( -yOffset );
-	trinketFrame:SetPoint( "BOTTOMLEFT", targetFrame, "TOPLEFT", 0, yOffset );
-	trinketFrame:SetPoint( "BOTTOMRIGHT", targetFrame, "TOPRIGHT", 0, yOffset );
+	trinketFrame:SetPoint( "BOTTOMLEFT", playerFrame, "TOPLEFT", 0, yOffset );
+	trinketFrame:SetPoint( "BOTTOMRIGHT", playerFrame, "TOPRIGHT", 0, yOffset );
 	trinketFrame:Show();
+	
+	local targetFrame = CreateAuraBarFrame( targetDataSource, oUF_Tukz_player );
+	targetFrame:SetHiddenHeight( -yOffset );
+	targetFrame:SetPoint( "BOTTOMLEFT", trinketFrame, "TOPLEFT", 0, yOffset );
+	targetFrame:SetPoint( "BOTTOMRIGHT", trinketFrame, "TOPRIGHT", 0, yOffset );
+	targetFrame:Show();
 else
 	error( "Undefined layout " .. tostring( LAYOUT ) );
 end
