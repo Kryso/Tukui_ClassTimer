@@ -1,4 +1,4 @@
-if ( TukuiUF ~= true ) then return; end
+if ( TukuiUF ~= true and ( TukuiDB == nil or TukuiDB["unitframes"] == nil or not TukuiDB["unitframes"]["enable"] ) ) then return; end
 
 --[[ Configuration functions - DO NOT TOUCH
 	id - spell id
@@ -27,6 +27,7 @@ local BAR_SPACING = 1;
 	1 - both player and target auras in one frame right above player frame
 	2 - player and target auras separated into two frames above player frame
 	3 - player, target and trinket auras separated into three frames above player frame
+	4 - player and trinket auras are shown above player frame and target auras are shown above target frame
 ]]--
 local LAYOUT = 3;
 
@@ -56,11 +57,20 @@ local CAST_SEPARATOR_COLOR = CreateColor( 0, 0, 0, 0.5 );
 -- Sets distance between right edge of bar and name and left edge of bar and time left
 local TEXT_MARGIN = 5;
 
--- Sets font for all texts
-local MASTER_FONT = { [=[Interface\Addons\Tukui\media\Russel Square LT.ttf]=], 12, "OUTLINE" };
+local MASTER_FONT, STACKS_FONT;
+if ( TukuiDB and TukuiDB["media"] and TukuiDB["media"]["uffont"] ) then
+	-- Sets font for all texts
+	MASTER_FONT = { TukuiDB["media"]["uffont"], 12, "OUTLINE" };
 
--- Sets font for stack count
-local STACKS_FONT = { [=[Interface\Addons\Tukui\media\Russel Square LT.ttf]=], 11, "OUTLINE" };
+	-- Sets font for stack count
+	STACKS_FONT = { TukuiDB["media"]["uffont"], 11, "OUTLINE" };
+else
+	-- Sets font for all texts
+	MASTER_FONT = { [=[Interface\Addons\Tukui\media\Russel Square LT.ttf]=], 12, "OUTLINE" };
+
+	-- Sets font for stack count
+	STACKS_FONT = { [=[Interface\Addons\Tukui\media\Russel Square LT.ttf]=], 11, "OUTLINE" };
+end
 
 --[[ Permanent aura bars
 	1 filled 		
@@ -105,7 +115,7 @@ local TRINKET_BAR_COLOR = CreateColor( 150, 150, 70, 1 );
 local SORT_DIRECTION = true;
 
 -- Timer tenths threshold - range from 1 to 60
-local TENTHS_TRESHOLD = 60
+local TENTHS_TRESHOLD = 1
 
 -- Trinket filter - mostly for trinket procs, delete or wrap into comment block --[[  ]] if you dont want to track those
 local TRINKET_FILTER = {
@@ -187,13 +197,13 @@ local CLASS_FILTERS = {
 				CreateSpellEntry( 55078 ), -- Blood Plague
 			},
 			player = { 
+				CreateSpellEntry( 59052 ), -- Freezing Fog
+				CreateSpellEntry( 51124 ), -- Killing Machine  
+				CreateSpellEntry( 49016 ), -- Hysteria
 				CreateSpellEntry( 49222 ), -- Bone Shield
 				CreateSpellEntry( 57623 ), -- Horn of Winter
 			},
 			procs = {
-				CreateSpellEntry( 59052 ), -- Freezing Fog
-				CreateSpellEntry( 51124 ), -- Killing Machine  
-				CreateSpellEntry( 49016 ), -- Hysteria
 				CreateSpellEntry( 53365 ), -- Unholy Strength	
 				CreateSpellEntry( 71227 ), -- Sigil of the Hanged Man				
 			}
@@ -333,6 +343,7 @@ local CLASS_FILTERS = {
 			procs = {
 				CreateSpellEntry( 63734 ), -- Serendipity
 				CreateSpellEntry( 33151 ), -- Surge of Light
+				CreateSpellEntry( 15258 ), -- Shadow Weaving
 			},
 		},
 		ROGUE = { 
@@ -627,7 +638,7 @@ do
 	-- constructor
 	CreateFramedTexture = function( parent )
 		local result = parent:CreateTexture( nil, "BACKGROUND", nil );
-		local border = parent:CreateTexture( nil, "ARTWORK", nil );
+		local border = parent:CreateTexture( nil, "BORDER", nil );
 		local background = parent:CreateTexture( nil, "ARTWORK", nil );
 		local texture = parent:CreateTexture( nil, "OVERLAY", nil );		
 		
@@ -1134,6 +1145,45 @@ elseif ( LAYOUT == 3 ) then
 	targetFrame:SetHiddenHeight( -yOffset );
 	targetFrame:SetPoint( "BOTTOMLEFT", trinketFrame, "TOPLEFT", 0, yOffset );
 	targetFrame:SetPoint( "BOTTOMRIGHT", trinketFrame, "TOPRIGHT", 0, yOffset );
+	targetFrame:Show();
+elseif ( LAYOUT == 4 ) then
+	local yOffset = 6;
+
+	local targetDataSource = CreateUnitAuraDataSource( "target" );
+	local playerDataSource = CreateUnitAuraDataSource( "player" );
+	local trinketDataSource = CreateUnitAuraDataSource( "player" );
+	
+	targetDataSource:SetSortDirection( SORT_DIRECTION );
+	playerDataSource:SetSortDirection( SORT_DIRECTION );
+	trinketDataSource:SetSortDirection( SORT_DIRECTION );
+	
+	if ( classFilter ) then
+		targetDataSource:AddFilter( classFilter.target, TARGET_BAR_COLOR, TARGET_DEBUFF_COLOR );		
+		playerDataSource:AddFilter( classFilter.player, PLAYER_BAR_COLOR, PLAYER_DEBUFF_COLOR );
+		trinketDataSource:AddFilter( classFilter.procs, TRINKET_BAR_COLOR );
+	end
+	trinketDataSource:AddFilter( TRINKET_FILTER, TRINKET_BAR_COLOR );
+
+	local playerFrame = CreateAuraBarFrame( playerDataSource, oUF_Tukz_player );
+	playerFrame:SetHiddenHeight( -yOffset );
+	if ( playerClass == "DEATHKNIGHT" or playerClass == "SHAMAN" ) then
+		playerFrame:SetPoint( "BOTTOMLEFT", oUF_Tukz_player, "TOPLEFT", 0, yOffset + 8 );
+		playerFrame:SetPoint( "BOTTOMRIGHT", oUF_Tukz_player, "TOPRIGHT", 0, yOffset + 8 );
+	else
+		playerFrame:SetPoint( "BOTTOMLEFT", oUF_Tukz_player, "TOPLEFT", 0, yOffset );
+		playerFrame:SetPoint( "BOTTOMRIGHT", oUF_Tukz_player, "TOPRIGHT", 0, yOffset );
+	end
+	playerFrame:Show();
+
+	local trinketFrame = CreateAuraBarFrame( trinketDataSource, oUF_Tukz_player );
+	trinketFrame:SetHiddenHeight( -yOffset );
+	trinketFrame:SetPoint( "BOTTOMLEFT", playerFrame, "TOPLEFT", 0, yOffset );
+	trinketFrame:SetPoint( "BOTTOMRIGHT", playerFrame, "TOPRIGHT", 0, yOffset );
+	trinketFrame:Show();
+	
+	local targetFrame = CreateAuraBarFrame( targetDataSource, oUF_Tukz_target );
+	targetFrame:SetPoint( "BOTTOMLEFT", oUF_Tukz_target, "TOPLEFT", 0, 8 + ( 32 * 3 ) );
+	targetFrame:SetPoint( "BOTTOMRIGHT", oUF_Tukz_target, "TOPRIGHT", 0, 8 + ( 32 * 3 ) );
 	targetFrame:Show();
 else
 	error( "Undefined layout " .. tostring( LAYOUT ) );
