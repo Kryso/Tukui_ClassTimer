@@ -145,6 +145,7 @@ local TRINKET_FILTER = {
 		CreateSpellEntry( 59626 ), -- Black Magic
 		CreateSpellEntry( 54758 ), -- Hyperspeed Acceleration (Hyperspeed Accelerators)
 		CreateSpellEntry( 55637 ), -- Lightweave
+		CreateSpellEntry( 59620 ), -- Berserking
 		
 		CreateSpellEntry( 2825, true ), CreateSpellEntry( 32182, true ), -- Bloodlust/Heroism
 		CreateSpellEntry( 26297 ), -- Berserking (troll racial)
@@ -427,6 +428,7 @@ local CLASS_FILTERS = {
 				CreateSpellEntry( 871 ), -- Shield Wall
 				CreateSpellEntry( 1719 ), -- Recklessness
 				CreateSpellEntry( 20230 ), -- Retaliation
+				CreateSpellEntry( 46916 ), -- Slam!
 			},
 			procs = {
 				
