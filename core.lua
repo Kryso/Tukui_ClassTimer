@@ -973,7 +973,7 @@ local init = function()
 
 		local frame = CreateAuraBarFrame( dataSource, oUF_TukuiPlayer );
 		local yOffset = 1;
-		if ( playerClass == "DEATHKNIGHT" or playerClass == "SHAMAN" ) then
+		if ( playerClass == "DEATHKNIGHT" or playerClass == "SHAMAN" or playerClass == "PALADIN" ) then
 			yOffset = yOffset + 8;
 		end
 		frame:SetPoint( "BOTTOMLEFT", oUF_TukuiPlayer, "TOPLEFT", 0, yOffset );
@@ -998,7 +998,7 @@ local init = function()
 		
 		local playerFrame = CreateAuraBarFrame( playerDataSource, oUF_TukuiPlayer );	
 		playerFrame:SetHiddenHeight( -yOffset );
-		if ( playerClass == "DEATHKNIGHT" or playerClass == "SHAMAN" ) then
+		if ( playerClass == "DEATHKNIGHT" or playerClass == "SHAMAN" or playerClass == "PALADIN" ) then
 			playerFrame:SetPoint( "BOTTOMLEFT", oUF_TukuiPlayer, "TOPLEFT", 0, yOffset + 8 );
 			playerFrame:SetPoint( "BOTTOMRIGHT", oUF_TukuiPlayer, "TOPRIGHT", 0, yOffset + 8 );
 		else
@@ -1031,7 +1031,7 @@ local init = function()
 
 		local playerFrame = CreateAuraBarFrame( playerDataSource, oUF_TukuiPlayer );
 		playerFrame:SetHiddenHeight( -yOffset );
-		if ( playerClass == "DEATHKNIGHT" or playerClass == "SHAMAN" ) then
+		if ( playerClass == "DEATHKNIGHT" or playerClass == "SHAMAN" or playerClass == "PALADIN" ) then
 			playerFrame:SetPoint( "BOTTOMLEFT", oUF_TukuiPlayer, "TOPLEFT", 0, yOffset + 8 );
 			playerFrame:SetPoint( "BOTTOMRIGHT", oUF_TukuiPlayer, "TOPRIGHT", 0, yOffset + 8 );
 		else
@@ -1071,7 +1071,7 @@ local init = function()
 
 		local playerFrame = CreateAuraBarFrame( playerDataSource, oUF_TukuiPlayer );
 		playerFrame:SetHiddenHeight( -yOffset );
-		if ( playerClass == "DEATHKNIGHT" or playerClass == "SHAMAN" ) then
+		if ( playerClass == "DEATHKNIGHT" or playerClass == "SHAMAN" or playerClass == "PALADIN" ) then
 			playerFrame:SetPoint( "BOTTOMLEFT", oUF_TukuiPlayer, "TOPLEFT", 0, yOffset + 8 );
 			playerFrame:SetPoint( "BOTTOMRIGHT", oUF_TukuiPlayer, "TOPRIGHT", 0, yOffset + 8 );
 		else
