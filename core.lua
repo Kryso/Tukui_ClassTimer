@@ -238,10 +238,12 @@ local CLASS_FILTERS = {
 
 			},
 		},
-		PALADIN = { 
+		PALADIN = {
 			target = {
-				CreateSpellEntry(196941), -- Judgment
-				CreateSpellEntry(26573), -- Consecration (Holy, Protection)
+				CreateSpellEntry(183218), -- Hand of Hindrance
+				CreateSpellEntry(197277), -- Judgment
+				CreateSpellEntry(196941), -- Judgment of the Light
+				CreateSpellEntry(204242), -- Consecration (Holy, Protection)
 				CreateSpellEntry(205228), -- Consecration (Retribution)
 				CreateSpellEntry(1044), -- Blessing of Freedom
 				CreateSpellEntry(204013), -- Blessing of Salvation
@@ -254,6 +256,9 @@ local CLASS_FILTERS = {
 				CreateSpellEntry(105421), -- Blinding Light
 			},
 			player = {
+				CreateSpellEntry(184092), -- Light of the Protector
+				CreateSpellEntry(210191), -- Word of Glory
+				CreateSpellEntry(205191), -- Eye for an Eye
 				CreateSpellEntry(1044), -- Blessing of Freedom
 				CreateSpellEntry(204013), -- Blessing of Salvation
 				CreateSpellEntry(204018), -- Blessing of Spellwarding
@@ -272,7 +277,7 @@ local CLASS_FILTERS = {
 				CreateSpellEntry(202273), -- Seal of Light
 				CreateSpellEntry(224668), -- Crusade
 				CreateSpellEntry(498), -- Divine Protection
-				CreateSpellEntry(220509), -- Divine Steed
+				CreateSpellEntry(221883), -- Divine Steed
 				CreateSpellEntry(31821), -- Aura Mastery
 			},
 			procs = {
